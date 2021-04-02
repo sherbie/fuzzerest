@@ -1,0 +1,11 @@
+.DS_Store
+*.log
+__pycache__/
+.idea/
+results/
+.*/
+query.txt
+*.egg*
+hot_fuzz/util/radamsa/
+.coverage
+reports/
