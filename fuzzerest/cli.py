@@ -123,7 +123,7 @@ class Client:
         self.parser.add_argument(
             "--printcurl",
             action="store_true",
-            help="The request to print a curl query command only.",
+            help="Print a curl query command only. Requires -u and --method arguments.",
         )
 
         self.constants = {}
