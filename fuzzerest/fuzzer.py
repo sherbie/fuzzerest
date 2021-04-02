@@ -51,7 +51,7 @@ class Fuzzer:
 
     def __init__(
         self,
-        schema_file_path,
+        model_file_path,
         domain,
         global_timeout=False,
         state=0,
@@ -62,7 +62,7 @@ class Fuzzer:
         config_obj=None,
     ):
         """
-        :param schema_file_path: string file handle for the schema
+        :param model_file_path: string file handle for the model
         :param domain: domain name
         :param global_timeout: if set to true, the timeout value will override all timeouts defined in the data model
         :param state: the starting state number
@@ -73,7 +73,7 @@ class Fuzzer:
         """
 
         self.constants = constants
-        self.schema_file_path = schema_file_path
+        self.model_file_path = model_file_path
         self.domain = domain
         self.timeout = timeout if timeout is not None and timeout > 0 else None
         self.global_timeout = global_timeout
@@ -105,7 +105,7 @@ class Fuzzer:
                 "method {0} is not a valid HTTP method".format(str(methods))
             )
 
-        name = "-" + os.path.splitext(os.path.basename(self.schema_file_path))[0]
+        name = "-" + os.path.splitext(os.path.basename(self.model_file_path))[0]
         name += (
             re.sub("[{}]", "", self.uri).replace("/", "-") if self.uri else "_all_uris"
         )
@@ -245,10 +245,10 @@ class Fuzzer:
 
     def load_model(self):
         """
-        Load the data model from the schema, then inject constants into the model.
+        Load the data model, then inject constants into the model.
         :return: data model with injected constants
         """
-        with open(self.schema_file_path, "r") as model_file:
+        with open(self.model_file_path, "r") as model_file:
             return json.loads(model_file.read(), object_pairs_hook=OrderedDict)
 
     def get_curl_query_string(self):
@@ -418,7 +418,7 @@ class Fuzzer:
     def _check_for_model_update(self):
         """
         If the check interval is reached, check for changes in the current model loaded in memory with a new instance
-        loaded from the same schema on the disk. If a change is found, reset the fuzzer state to its starting state,
+        loaded from the same model on the disk. If a change is found, reset the fuzzer state to its starting state,
         update the loaded model, log the event, then reset the check interval.
         :return:
         """
@@ -433,7 +433,7 @@ class Fuzzer:
                 "at state "
                 + str(self.state)
                 + " a new data model instance was loaded after detecting a change in "
-                + self.schema_file_path,
+                + self.model_file_path,
             )
             self.config.root_logger.log(
                 self.config.note_log_level,

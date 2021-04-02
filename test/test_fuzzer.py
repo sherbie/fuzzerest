@@ -512,11 +512,11 @@ def test_check_for_model_update(fuzzer):
 
     fuzzer.time_since_last_model_check = fuzzer.model_reload_rate + 1
     model = {"random": "new", "model": 0}
-    fuzzer.model_obj = model  # this simulates a change in the schema
+    fuzzer.model_obj = model  # this simulates a change in the model
     fuzzer._check_for_model_update()
     assert (
         fuzzer.model_obj != model
-    ), "should change because the model in memory differs from what was loaded from the schema file"
+    ), "should change because the model in memory differs from what was loaded from the model file"
 
 
 def test_fuzz_requests_by_incremental_state(config):
@@ -762,7 +762,7 @@ def test_get_curl_query_string_constants(fuzzer, config):
 
 
 def test_get_model_with_constants(fuzzer, config):
-    fuzzer.schema_file_path = ""
+    fuzzer.model_file_path = ""
     try:
         fuzzer.load_model()
         raise Exception(
@@ -771,7 +771,7 @@ def test_get_model_with_constants(fuzzer, config):
     except FileNotFoundError:
         pass
 
-    fuzzer.schema_file_path = config.example_json_file
+    fuzzer.model_file_path = config.example_json_file
     fuzzer.load_model()  # testing the constant injection feature is done in inject_constants
 
 
