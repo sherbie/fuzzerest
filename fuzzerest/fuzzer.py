@@ -23,9 +23,13 @@ class Fuzzer:
         )
 
     def _send_slack_message(self, message):
-        return self.slacker.api_call(
-            "chat.postMessage", channel=self.config.slack_channel, text=message
-        )
+        # TODO: need slack interface
+        if self.slacker.server.connected:
+            return self.slacker.api_call(
+                "chat.postMessage", channel=self.config.slack_channel, text=message
+            )
+        else:
+            return {"ok": False}
 
     def exit_handler(self, signum, frame):
         self.config.root_logger.log(
@@ -43,10 +47,9 @@ class Fuzzer:
         if not resp["ok"]:
             self.config.root_logger.log(
                 logging.ERROR,
-                "failed to connect slack client to channel "
-                + self.config.slack_channel
-                + " with token "
-                + self.config.slack_client_token,
+                "failed to connect slack client to channel %s with token %s",
+                self.config.slack_channel,
+                self.config.slack_client_token,
             )
 
     def __init__(
