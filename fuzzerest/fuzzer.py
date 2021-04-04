@@ -19,7 +19,7 @@ from fuzzerest.config.config import Config
 class Fuzzer:
     def log_last_state_used(self, state):
         self.config.root_logger.log(
-            self.config.note_log_level, "Last state used: {0}".format(state)
+            self.config.note_log_level, "Last state used: %s", state
         )
 
     def _send_slack_message(self, message):
@@ -29,7 +29,7 @@ class Fuzzer:
 
     def exit_handler(self, signum, frame):
         self.config.root_logger.log(
-            self.config.note_log_level, "Exited with signal: {0}".format(signum)
+            self.config.note_log_level, "Exited with signal: %s", signum
         )
         if signum != 0:
             self.config.root_logger.log(logging.ERROR, traceback.extract_stack(frame))
@@ -94,16 +94,12 @@ class Fuzzer:
             self.methods = []
             for m in methods:
                 if m not in request.METHODS:
-                    raise RuntimeError(
-                        "method {0} is not a valid HTTP method".format(str(m))
-                    )
+                    raise RuntimeError(f"method {m} is not a valid HTTP method")
                 self.methods.append(m.upper())
         elif isinstance(methods, str) and methods in request.METHODS:
             self.methods = [methods]
         else:
-            raise RuntimeError(
-                "method {0} is not a valid HTTP method".format(str(methods))
-            )
+            raise RuntimeError(f"method {methods} is not a valid HTTP method")
 
         name = "-" + os.path.splitext(os.path.basename(self.model_file_path))[0]
         name += (
@@ -115,7 +111,7 @@ class Fuzzer:
             else "_" + "_".join(self.methods)
         )
         self.log_file_name = os.path.join(
-            self.config.results_dir, "{0}{1}.log".format(strftime("%Y%m%d%H%M%S"), name)
+            self.config.results_dir, f'{strftime("%Y%m%d%H%M%S")}{name}.log'
         )
         file_handler = logging.FileHandler(self.log_file_name)
         file_handler.setFormatter(self.config.log_formatter)
@@ -266,9 +262,7 @@ class Fuzzer:
 
         if not endpoints:
             raise RuntimeError(
-                "failed to locate uri '{0}' with method '{1}' in model".format(
-                    self.uri, method
-                )
+                f'failed to locate uri "{self.uri}" with method "{method}" in model'
             )
 
         endpoint_obj = self.inject_constants(endpoints[0], self.constants)
@@ -406,11 +400,15 @@ class Fuzzer:
                 if my_timeout is not None:
                     self.config.root_logger.log(
                         self.config.trace_log_level,
-                        "timeout={0}s delay={1}s".format(my_timeout, request_delay),
+                        "timeout=%ss delay=%ss",
+                        my_timeout,
+                        request_delay,
                     )
                 else:
                     self.config.root_logger.log(
-                        self.config.trace_log_level, "delay={0}s".format(request_delay)
+                        self.config.trace_log_level,
+                        "delay=%ss",
+                        request_delay,
                     )
 
         return results

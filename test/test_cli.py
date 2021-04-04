@@ -30,9 +30,7 @@ def test_set_logging_level(client):
             argparse_args + ["-l", str(level)]
         )
         client._set_logging_level()
-        msg = "should be log level {0} when level was set to {1}".format(
-            client.config.logging_levels[level], str(level)
-        )
+        msg = f"should be log level {client.config.logging_levels[level]} when level was set to {level}"
         assert (
             client.config.root_logger.level == client.config.logging_levels[level]
         ), msg
@@ -41,9 +39,7 @@ def test_set_logging_level(client):
             argparse_args + ["--loglevel", str(level)]
         )
         client._set_logging_level()
-        msg = "should be log level {0} when level was set to {1}".format(
-            client.config.logging_levels[level], str(level)
-        )
+        msg = f"should be log level {client.config.logging_levels[level]} when level was set to {level}"
         assert (
             client.config.root_logger.level == client.config.logging_levels[level]
         ), msg
@@ -62,7 +58,7 @@ def test_get_cmd_string(client):
     jsonargs = ["-c", '{"my": "test", "json": "arg"}']
     sys.argv = args + jsonargs
     actual = client._get_cmd_string().strip(" ")
-    expected = " ".join(args + [jsonargs[0]]) + " '{0}'".format(jsonargs[1])
+    expected = " ".join(args + [jsonargs[0]]) + f" '{jsonargs[1]}'"
     assert (
         actual == expected
     ), "should reproduce input with json arg surrounded with quotes"
@@ -143,9 +139,9 @@ def test_parse_default_cli_args(client, config):
         script_dir, "..", os.path.realpath(config.example_json_file)
     )
     assert os.path.exists(expected_path), expected_path
-    assert actual_path == expected_path, "actual={}, expected={}".format(
-        actual_path, expected_path
-    )
+    assert (
+        actual_path == expected_path
+    ), f"actual={actual_path}, expected={expected_path}"
     assert client.parsed_args.domain == config.default_model_domain_name
     assert not client.parsed_args.gtimeout, client.parsed_args.gtimeout
     assert client.parsed_args.state == 0

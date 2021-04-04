@@ -180,26 +180,26 @@ def construct_curl_query(
     if body_obj is not None:
         body = json.dumps(body_obj)
 
-    request = "request = {0}\n".format(method)
+    request = f"request = {method}\n"
 
     if headers_obj is not None:
         for (key, value) in headers_obj.items():
-            headers += 'header = "{0}: {1}"\n'.format(key, value)
+            headers += f'header = "{key}: {value}"\n'
 
     if body_obj is not None:
         body = json.dumps(
             body
         )  # serialize it again, so the data has a proper format in the config file
-        body = "data = {0}\n".format(body)
+        body = f"data = {body}\n"
 
-    url = 'url = "{0}"'.format(url)
+    url = f'url = "{url}"'
 
     Path(os.path.dirname(curl_config_file_path)).mkdir(parents=True, exist_ok=True)
     with open(curl_config_file_path, "w+") as config_file:
         config_file.writelines([request, headers, body, url])
         config_file.close()
 
-    curl_query = "curl -g -K {0}".format(curl_config_file_path)
+    curl_query = f"curl -g -K {curl_config_file_path}"
 
     return curl_query
 

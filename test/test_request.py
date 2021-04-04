@@ -51,7 +51,7 @@ def test_get_endpoints(model):
     endpoints = Fuzzer.get_endpoints(model["endpoints"], uri)
     assert (
         len(endpoints) == nExpected
-    ), "should have {0} endpoint definitions for {1}".format(nExpected, uri)
+    ), f"should have {nExpected} endpoint definitions for {uri}"
 
     methods = ["PUT", "PATCH"]
     nExpected = 1
@@ -103,7 +103,7 @@ def test_construct_curl_query(config, model):
         endpoint["input"]["query"],
     )
 
-    expected_query = "curl -g -K {0}".format(curl_data_file_path)
+    expected_query = f"curl -g -K {curl_data_file_path}"
 
     assert expected_query == actual_query, "should construct a valid curl query"
 
