@@ -84,8 +84,8 @@
       },
       "expectations": [
         "import string",
-        "expectation = result.get('httpcode', 0) == 200 and string.digits == '0123456789'",
-        "expectation = expectation and result.get('time', 0) >= 1"
+        "expectation = summary.status_code == 200 and string.digits == '0123456789'",
+        "expectation = expectation and summary.time >= 1"
       ]
     },
     {

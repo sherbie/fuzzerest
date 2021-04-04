@@ -4,6 +4,7 @@ import operator
 import os
 import re
 import time
+import traceback
 import unicodedata
 import urllib
 from numbers import Number
@@ -21,16 +22,20 @@ METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
 
 class Summary:
+    """
+    A Summary is an aggregation of fuzzer input prior to sending a request. The
+    response object is included, if available.
+    """
     def __init__(
         self,
         method: str,
         headers: dict,
         body: dict,
-        delay: float,
         timestamp: float,
-        url: str = None,
+        url: str,
+        delay: float = 0,
         response: requests.Response = None,
-        error: str = None,
+        error: str = "",
     ):
         self.method = method
         self.headers = headers
@@ -42,11 +47,11 @@ class Summary:
             + len(json.dumps(self.body))
             + get_header_size_in_bytes(self.headers)
         )
-        self._response = response
+        self.response = response
         self.time = timestamp
         self.error = error
-        self.response_text = self._response.text if self._response else ""
-        self.status_code = self._response.status_code if self._response else 0
+        self.response_text = self.response.text if self.response else ""
+        self.status_code = self.response.status_code if self.response else 0
         self.success = self.error is None
 
     def __iter__(self):
@@ -109,54 +114,44 @@ def send_request(
     :param headers_obj: request headers dict
     :param body_obj: request body dict
     :param query_obj: request query parameters dict
-    :return: result object
+    :return: Summary object
     """
-
-    result = OrderedDict()
-    result["method"] = method
-    result["headers"] = headers_obj
-    result["body"] = body_obj
 
     if delay > 0:
         time.sleep(delay)
-        result["delay"] = delay
 
     now = time.time()
 
     try:
         url, headers_obj = sanitize(domain_obj, uri, query_obj, headers_obj)
-        result["url"] = url
-        body_str = json.dumps(result["body"])
-        result["size"] = (
-            len(result["url"])
-            + len(body_str)
-            + get_header_size_in_bytes(result["headers"])
-        )
+    except:
+        # TODO
+        pass
 
-        r = requests.request(
+    try:
+        body_str = json.dumps(body_obj)
+
+        response = requests.request(
             method, url, headers=headers_obj, timeout=timeout, data=body_str
         )
-
-        result["result"] = r  # to be cleaned up in another code change
-        result["response"] = r.text
-        result["reason"] = r.reason
-        result["httpcode"] = r.status_code
+        error = None
     except (OSError, ValueError, requests.exceptions.Timeout) as e:
-        result["reason"] = str(type(e)) + ": " + str(e.args)
+        error = repr(e) + ": " + "".join(traceback.format_tb(e.__traceback__))
+        response = None
     finally:
-        result["time"] = round(time.time() - now, 3)
+        timestamp = round(time.time() - now, 3)
 
+    result = Summary(
+        method=method,
+        headers=headers_obj,
+        body=body_obj,
+        delay=delay,
+        timestamp=timestamp,
+        url=url,
+        response=response,
+        error=error,
+    )
     return result
-
-
-def dump_result(result):
-    """
-    Dump the result object created by send_request to a string-ified json. The requests.Reponse object is stripped
-    because it cannot be serialized.
-    """
-    swap = result
-    swap.pop("result", None)
-    return json.dumps(swap)
 
 
 def get_url_encoded_text(text):

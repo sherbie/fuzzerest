@@ -14,6 +14,7 @@ import slackclient
 
 from fuzzerest import mutator, request
 from fuzzerest.config.config import Config
+from fuzzerest.request import Summary
 
 
 class Fuzzer:
@@ -149,11 +150,11 @@ class Fuzzer:
         self.last_slack_status_update = time()
 
     @staticmethod
-    def evaluate_expectations(expectations_obj, result):
+    def evaluate_expectations(expectations_obj, summary: Summary):
         """
         Determine if the data contained in result meets the requirements provided in expectations_obj.
         :param expectations_obj: A list of code to be evaluated to determine if result is acceptable
-        :param result: A result object provided by send_payload
+        :param summary: A Summary object provided by send_payload
         :return: boolean: True if the result meets the expectation
         """
         # result and expectation are actually used in the exec call
@@ -229,7 +230,7 @@ class Fuzzer:
         :param method: request method
         :param timeout: amount of seconds (float) that the request api will wait for the first byte of a response
         :param delay: delay in seconds before the payload is sent
-        :return: request result dictionary
+        :return: Summary object
         """
         return request.send_request(
             self.model_obj["domains"][self.domain],
@@ -361,19 +362,19 @@ class Fuzzer:
                 )
                 results.append(result)
 
-                summary = "state={0} method={1} uri={2} code={3} reason='{4}'".format(
-                    result["headers"]["X-fuzzeREST-State"],
+                summary = "state={0} method={1} uri={2}".format(
+                    result.headers["X-fuzzeREST-State"],
                     method,
                     endpoint_obj["uri"],
-                    result.get("httpcode"),
-                    result.get("reason"),
                 )
+                summary += f" code={result.status_code}"
+                summary += f' error="{result.error}"'
 
                 expectations_obj = self.get_expectations(endpoint_obj)
 
                 if Fuzzer.evaluate_expectations(expectations_obj, result) is False:
                     self.config.root_logger.warning(summary)
-                    self.config.root_logger.debug(request.dump_result(result))
+                    self.config.root_logger.debug(str(result))
 
                     # reset the counted slack errors every hour
                     if self.last_hour != localtime().tm_hour:
@@ -387,7 +388,7 @@ class Fuzzer:
                 else:
                     self.config.root_logger.info(summary)
                     self.config.root_logger.log(
-                        self.config.trace_log_level, request.dump_result(result)
+                        self.config.trace_log_level, str(result)
                     )
                     if (
                         time() - self.last_slack_status_update
