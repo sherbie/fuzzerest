@@ -155,7 +155,7 @@ class Client:
         for token in sys.argv:
             try:
                 if isinstance(json.loads(token), (dict, list)):
-                    cmd += " '{0}'".format(token)
+                    cmd += f" '{token}'"
                 else:
                     cmd += " " + token
             except (json.decoder.JSONDecodeError, TypeError):

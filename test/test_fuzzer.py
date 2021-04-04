@@ -187,20 +187,20 @@ def inject_constants(fuzzer):
     assert token in json.dumps(fuzzer.model_obj)
     assert token not in json.dumps(
         Fuzzer.inject_constants(fuzzer.model_obj, constants)
-    ), "'{0}' should have been replaced by '{1}'".format(token, constants[token])
+    ), f'"{token}" should have been replaced by "{constants[token]}"'
     assert constants[token] in json.dumps(
         Fuzzer.inject_constants(fuzzer.model_obj, constants)
-    ), ("'{0}' should have replaced '{1}'".format(constants[token], token),)
+    ), f'"{constants[token]}" should have replaced "{token}"'
 
     constants = {token: True}
     assert "true" in json.dumps(
         Fuzzer.inject_constants(fuzzer.model_obj, constants)
-    ), "'{0}' should have replaced '{1}'".format("true", token)
+    ), f'"true" should have replaced "{token}"'
 
     constants = {token: 534897}
     assert str(constants[token]) in json.dumps(
         Fuzzer.inject_constants(fuzzer.model_obj, constants)
-    ), "'{0}' should have replaced '{1}'".format(str(constants[token]), token)
+    ), f'"{constants[token]}" should have replaced "{token}"'
 
 
 def mutate_payload_body(fuzzer):
@@ -340,14 +340,12 @@ def test_iterate_endpoints_uri(config):
     results = fuzzer.iterate_endpoints()
     assert (
         len(results) == expected_n_results
-    ), "should only iterate {0} times over {1} endpoint with all methods".format(
-        str(expected_n_results), fuzzer.uri
-    )
+    ), f"should only iterate {expected_n_results} times over {fuzzer.uri} endpoint with all methods"
 
     for i in results:
-        assert fuzzer.uri in i["url"], "expected iteration {0} to contain {1}".format(
-            json.dumps(i), fuzzer.uri
-        )
+        assert (
+            fuzzer.uri in i["url"]
+        ), f"expected iteration {json.dumps(i)} to contain {fuzzer.uri}"
 
 
 def test_iterate_endpoints_methods(config):
@@ -366,16 +364,12 @@ def test_iterate_endpoints_methods(config):
     results = fuzzer.iterate_endpoints()
     assert (
         len(results) == expected_n_results
-    ), "should only iterate {0} times over all endpoints with methods {1}".format(
-        str(expected_n_results), str(fuzzer.methods)
-    )
+    ), f"should only iterate {expected_n_results} times over all endpoints with methods {fuzzer.methods}"
 
     for i in results:
         assert (
             i["method"] in fuzzer.methods
-        ), "expected iteration {0} to contain one of methods {1}".format(
-            json.dumps(i), str(fuzzer.methods)
-        )
+        ), f"expected iteration {json.dumps(i)} to contain one of methods {fuzzer.methods}"
 
 
 def test_iterate_endpoints_uri_methods(config):
@@ -395,16 +389,12 @@ def test_iterate_endpoints_uri_methods(config):
     results = fuzzer.iterate_endpoints()
     assert (
         len(results) == expected_n_results
-    ), "should only iterate {0} times over all endpoints with methods {1}".format(
-        str(expected_n_results), str(fuzzer.methods)
-    )
+    ), f"should only iterate {expected_n_results} times over all endpoints with methods {fuzzer.methods}"
 
     for i in results:
         assert (
             i["method"] in fuzzer.methods
-        ), "expected iteration {0} to contain one of methods {1}".format(
-            json.dumps(i), str(fuzzer.methods)
-        )
+        ), f"expected iteration {json.dumps(i)} to contain one of methods {fuzzer.methods}"
 
     placeholder = "{otherId}"
     original_uri = "/" + placeholder
@@ -418,8 +408,8 @@ def test_iterate_endpoints_uri_methods(config):
     )
     results = fuzzer.iterate_endpoints()
     assert expected_uri in json.dumps(results), (
-        "should find a request with uri {0} that was changed to {1} after injecting {2} "
-        "as a constant".format(original_uri, expected_uri, expected_constant)
+        f"should find a request with uri {original_uri} that was changed to {expected_uri} after injecting {expected_constant} "
+        "as a constant"
     )
 
     placeholder = "{something_that_doesnt_exist}"
@@ -433,8 +423,8 @@ def test_iterate_endpoints_uri_methods(config):
     )
     results = fuzzer.iterate_endpoints()
     assert expected_uri not in json.dumps(results), (
-        "should not find a request with uri {0} that was changed to {1} after injecting {2} "
-        "as a constant".format(original_uri, expected_uri, expected_constant)
+        f"should not find a request with uri {original_uri} that was changed to {expected_uri} after injecting {expected_constant} "
+        "as a constant"
     )
 
 
@@ -446,9 +436,7 @@ def test_iterate_endpoints_all(config):
     results = fuzzer.iterate_endpoints()
     assert (
         len(results) == expected_n_results
-    ), "should only iterate {0} times over all endpoints and methods".format(
-        str(expected_n_results)
-    )
+    ), f"should only iterate {expected_n_results} times over all endpoints and methods"
 
 
 def test_iterate_endpoints_log_summary_uri(config):
@@ -499,9 +487,7 @@ def test_check_for_model_update(fuzzer):
     fuzzer._check_for_model_update()
     assert (
         model == fuzzer.model_obj
-    ), "should not change since elapsed time ({0}s) has not exceeded reload interval ({1}s)".format(
-        fuzzer.time_since_last_model_check, fuzzer.model_reload_rate
-    )
+    ), f"should not change since elapsed time ({fuzzer.time_since_last_model_check}s) has not exceeded reload interval ({fuzzer.model_reload_rate}s)"
 
     fuzzer.time_since_last_model_check = fuzzer.model_reload_rate + 1
     fuzzer._check_for_model_update()
@@ -635,26 +621,20 @@ def test_state_iteration(config):
     for r in results:
         assert (
             int(r["headers"]["X-fuzzeREST-State"]) == state
-        ), "state for each endpoint should be {0} for the first iteration".format(
-            str(state)
-        )
+        ), f"state for each endpoint should be {state} for the first iteration"
 
     state += 1
     results = fuzzer.fuzz_requests_by_incremental_state(n_times)
     for r in results:
         assert (
             int(r["headers"]["X-fuzzeREST-State"]) == state
-        ), "state for each endpoint should be {0} for the second iteration".format(
-            str(state)
-        )
+        ), f"state for each endpoint should be {state} for the second iteration"
 
     results = fuzzer.fuzz_requests_by_incremental_state(n_times)
     for r in results:
         assert (
             int(r["headers"]["X-fuzzeREST-State"]) != state
-        ), "state for each endpoint should be {0} for the third iteration".format(
-            str(state + 1)
-        )
+        ), f"state for each endpoint should be {state + 1} for the third iteration"
 
 
 def test_get_states_from_file(config):
@@ -679,9 +659,7 @@ def test_send_delayed_request_local(config):
     expected_delay = request.get_request_delay(expected_requests_per_second)
     assert (
         results[0]["delay"] == expected_delay
-    ), "local request rate defined in endpoint should have delay of {0}".format(
-        expected_delay
-    )
+    ), f"local request rate defined in endpoint should have delay of {expected_delay}"
 
 
 def test_send_delayed_request_global(config):
@@ -699,9 +677,7 @@ def test_send_delayed_request_global(config):
     expected_delay = request.get_request_delay(expected_requests_per_second)
     assert (
         results[0]["delay"] == expected_delay
-    ), "local request rate should override global definition with delay of {0}".format(
-        expected_delay
-    )
+    ), f"local request rate should override global definition with delay of {expected_delay}"
 
     fuzzer = Fuzzer(
         config.example_json_file,
@@ -715,7 +691,7 @@ def test_send_delayed_request_global(config):
     expected_delay = request.get_request_delay(fuzzer.model_obj["requestsPerSecond"])
     assert (
         results[0]["delay"] == expected_delay
-    ), "global definition should have delay of {0}".format(expected_delay)
+    ), f"global definition should have delay of {expected_delay}"
 
 
 def test_get_curl_query_string(fuzzer):

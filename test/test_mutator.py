@@ -22,9 +22,7 @@ def test_chance(mutator):
     diff = abs(result[True] / n_times - expected_probability)
     assert (
         tolerance >= diff
-    ), "{0} exceeded tolerance of {1} for probability {2}".format(
-        diff, tolerance, expected_probability
-    )
+    ), f"{diff} exceeded tolerance of {tolerance} for probability {expected_probability}"
 
 
 def test_chance_identity(mutator):
@@ -51,9 +49,7 @@ def test_roll_dice(mutator):
         diff = abs(result[n] / n_times - expected_probability)
         assert (
             tolerance >= diff
-        ), "{0} exceeded tolerance of {1} for probability {2}".format(
-            diff, tolerance, expected_probability
-        )
+        ), f"{diff} exceeded tolerance of {tolerance} for probability {expected_probability}"
 
 
 def test_roll_dice_identity(mutator):
@@ -80,9 +76,7 @@ def test_juggle_type(mutator):
         diff = abs(result[key] / n_times - expected_probability)
         assert (
             tolerance >= diff
-        ), "{0} exceeded tolerance of {1} for probability {2}".format(
-            diff, tolerance, expected_probability
-        )
+        ), f"{diff} exceeded tolerance of {tolerance} for probability {expected_probability}"
 
 
 def test_mutate_radamsa_state_change(mutator):
@@ -320,12 +314,8 @@ def test_safe_decode(mutator):
     emoji = "🙂"
     assert mutator.safe_decode(emoji.encode()) == emoji.encode().decode(
         mutator.byte_encoding
-    ), "should properly decode '{0}' using {1} encoding".format(
-        emoji, mutator.byte_encoding
-    )
+    ), f'should properly decode "{emoji}" using {mutator.byte_encoding} encoding'
     mutator.byte_encoding = "ascii"
     assert mutator.safe_decode(emoji.encode()) == str(
         emoji.encode()
-    ), "should stringify '{0}' bytes because it cannot decode using {1} byte encoding".format(
-        emoji, mutator.byte_encoding
-    )
+    ), f'should stringify "{emoji}" bytes because it cannot decode using {mutator.byte_encoding} byte encoding'
