@@ -6,7 +6,6 @@ import re
 import time
 import unicodedata
 import urllib
-from collections import OrderedDict
 from numbers import Number
 from pathlib import Path
 
@@ -19,6 +18,57 @@ CONFIG.read(
 
 DEFAULT_TIMEOUT = CONFIG.getfloat("DEFAULT", "timeout")
 METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+
+
+class Summary:
+    def __init__(
+        self,
+        method: str,
+        headers: dict,
+        body: dict,
+        delay: float,
+        timestamp: float,
+        url: str = None,
+        response: requests.Response = None,
+        error: str = None,
+    ):
+        self.method = method
+        self.headers = headers
+        self.body = body
+        self.delay = delay
+        self.url = url if url else ""
+        self.size = (
+            len(self.url)
+            + len(json.dumps(self.body))
+            + get_header_size_in_bytes(self.headers)
+        )
+        self._response = response
+        self.time = timestamp
+        self.error = error
+        self.response_text = self._response.text if self._response else ""
+        self.status_code = self._response.status_code if self._response else 0
+        self.success = self.error is None
+
+    def __iter__(self):
+        yield "method", self.method
+        yield "headers", self.headers
+        yield "body", self.body
+        yield "delay", self.delay
+        yield "url", self.url
+        yield "size", self.size
+        yield "time", self.time
+        yield "error", self.error
+        yield "response_text", self.response_text
+        yield "status_code", self.status_code
+
+    def __str__(self):
+        return str(dict(self.__iter__()))
+
+    def get(self, key, default=None):
+        """
+        Mimics dict method of same name to support exec() builtin.
+        """
+        return dict(self).get(key, default)
 
 
 def get_header_size_in_bytes(header_obj):
