@@ -6,6 +6,6 @@ results/
 .*/
 query.txt
 *.egg*
-hot_fuzz/util/radamsa/
+fuzzerest/util/radamsa/
 .coverage
 reports/
