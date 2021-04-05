@@ -128,7 +128,7 @@ class Client:
 
         self.constants = {}
         self.parsed_args = None
-        self.fuzzer_results = []
+        self.request_summaries = []
         self.model_file_path = ""
         self.states = []
 
@@ -212,10 +212,10 @@ class Client:
             print(" ---> Printing curl:\n" + fuzzer.get_curl_query_string())
         else:
             if self.states:
-                self.fuzzer_results = fuzzer.fuzz_requests_by_state_list(self.states)
+                self.request_summaries = fuzzer.fuzz_requests_by_state_list(self.states)
                 fuzzer.log_last_state_used(fuzzer.state)
             else:
-                self.fuzzer_results = fuzzer.fuzz_requests_by_incremental_state(
+                self.request_summaries = fuzzer.fuzz_requests_by_incremental_state(
                     self.parsed_args.iterations
                 )
 

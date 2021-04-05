@@ -73,19 +73,6 @@ def test_get_endpoints_uri(model):
     assert len(endpoints) == n_expected, f"should have {n_expected} {uri} endpoints"
 
 
-def test_dump_result():
-    result = {"result": "abc", "stuff": 123}
-    assert "result" not in request.dump_result(result)
-    assert "stuff" in request.dump_result(result)
-
-    result = {"stuff": 123}
-    assert "result" not in request.dump_result(result)
-    assert "stuff" in request.dump_result(result)
-
-    result = {}
-    assert "{}" == request.dump_result(result)
-
-
 def test_construct_curl_query(config, model):
     curl_data_file_path = config.curl_data_file_path
     uri = "/poorly/designed/endpoint"
@@ -127,17 +114,17 @@ def test_delay_request(model):
     request_time = time.time() - now
     expected_delay = 0.4
     assert (
-        expected_delay == response["delay"]
+        expected_delay == response.delay
     ), "Delay should be represented in the response object"
     tolerance = 0.005
     assert round(request_time - expected_delay, 3) >= round(
-        response["time"] - tolerance, 3
+        response.time - tolerance, 3
     ), (
         "Request time should be equal to the time between building the request to receiving"
         " the response, minus the delay time +/- " + str(tolerance),
     )
     assert round(request_time - expected_delay, 3) <= round(
-        response["time"] + tolerance, 3
+        response.time + tolerance, 3
     ), (
         "Request time should be equal to the time between building the request to receiving"
         " the response, minus the delay time +/- " + str(tolerance),
@@ -152,14 +139,14 @@ def test_get_header_size_in_bytes():
     ), f"should have size {expected_size}"
 
 
-def test_send_request_result_size(model):
+def test_send_request_summary_size(model):
     method = "GET"
     uri = "/poorly/designed/endpoint"
     endpoint = Fuzzer.get_endpoints(model["endpoints"], uri, methods=[method])[0]
     headers = endpoint["headers"]
     body = endpoint["input"]["body"]
     query = endpoint["input"]["query"]
-    result = request.send_request(
+    summary = request.send_request(
         model["domains"]["example"],
         uri,
         method,
@@ -168,13 +155,13 @@ def test_send_request_result_size(model):
         query_obj=query,
     )
     expected_url_size = 63
-    assert len(result["url"]) == expected_url_size
+    assert len(summary.url) == expected_url_size
     expected_body_size = 35
-    assert len(json.dumps(result["body"])) == expected_body_size
+    assert len(json.dumps(summary.body)) == expected_body_size
     expected_header_size = 58
-    assert request.get_header_size_in_bytes(result["headers"]) == expected_header_size
+    assert request.get_header_size_in_bytes(summary.headers) == expected_header_size
     expected_size = expected_url_size + expected_body_size + expected_header_size
-    assert result["size"] == expected_size, f"should have size {expected_size}"
+    assert summary.size == expected_size, f"should have size {expected_size}"
 
 
 def test_truncate_object():
@@ -323,12 +310,12 @@ def test_sanitize_url_length_limit(model, config):
 
 def test_send_request(mocker, model):
     expected_text = "text"
-    expected_reason = "reason"
+    expected_error = None
     expected_httpcode = 200
 
     class MockResponse:
         text = expected_text
-        reason = expected_reason
+        reason = "reason"
         status_code = expected_httpcode
 
     expected_res = MockResponse()
@@ -345,13 +332,13 @@ def test_send_request(mocker, model):
         body_obj=endpoint["input"]["body"],
     )
 
-    assert res.get("httpcode") == expected_httpcode
-    assert res.get("response") == expected_text
-    assert res.get("reason") == expected_reason
-    assert res.get("result") == expected_res
-    assert res.get("delay") is None
-    assert res.get("method") == method
-    assert res.get("headers") is None
+    assert res.status_code == expected_httpcode
+    assert res.response_text == expected_text
+    assert res.error == expected_error
+    assert res.response == expected_res
+    assert res.delay is 0
+    assert res.method == method
+    assert res.headers is None
 
 
 def test_send_request_timeout(mocker, model):
@@ -371,7 +358,7 @@ def test_send_request_timeout(mocker, model):
         timeout=0.1,
         query_obj=endpoint["input"]["query"],
     )
-    assert expected_reason in res.get("reason")
+    assert expected_reason in res.error
 
 
 def test_send_request_body_and_query(mocker, model):
@@ -394,9 +381,9 @@ def test_send_request_body_and_query(mocker, model):
         query_obj=endpoint["input"]["query"],
     )
     assert (
-        res["body"] == endpoint["input"]["body"]
+        res.body == endpoint["input"]["body"]
     ), "expected response to contain request body"
-    assert res["url"] == request.get_encoded_url(
+    assert res.url == request.get_encoded_url(
         model["domains"]["local"],
         endpoint["uri"],
         endpoint["input"]["query"],

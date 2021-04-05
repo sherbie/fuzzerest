@@ -170,7 +170,7 @@ def test_run_fuzzer(client):
     client.parse_cli_args()
     client.run_fuzzer()
     expected_nstates = 7
-    assert len(client.fuzzer_results) == expected_nstates, (
+    assert len(client.request_summaries) == expected_nstates, (
         "should execute "
         + str(expected_nstates)
         + " iterations (each state in the state file)"
@@ -179,6 +179,6 @@ def test_run_fuzzer(client):
     sys.argv = cmdline_args + ["-i", str(expected_nstates)]
     client.parse_cli_args()
     client.run_fuzzer()
-    assert len(client.fuzzer_results) == expected_nstates, (
+    assert len(client.request_summaries) == expected_nstates, (
         "should execute " + str(expected_nstates) + " iterations"
     )
