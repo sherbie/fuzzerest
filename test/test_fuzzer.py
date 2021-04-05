@@ -93,7 +93,7 @@ def log_last_state_used(fuzzer):
     fuzzer.log_last_state_used(0)
 
 
-def evaluate_endpoint_expectation(config):
+def test_evaluate_endpoint_expectation(config):
     with open(config.example_json_file, "r") as model_file:
         model = json.loads(model_file.read())
 
