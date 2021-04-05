@@ -16,41 +16,14 @@ $ make run-mockserver
 
 fuzzeREST requires a fuzzing model to know where and how to fuzz a specific service's endpoint.
 
-For instance, the example model file [tutorial.json](fuzzerest/models/tutorial.json) defines the required details to fuzz the `/watch` endpoint hosted at the `example` domain as follows:
-
-```
-{
-  "domains": {
-    "example": {
-      "host": "localhost",
-      "port": 8080,
-      "protocol": "http"
-    }
-  },
-  "endpoints": [
-    {
-      "uri": "/watch",
-      "comment": "watch video",
-      "methods": ["GET"],
-      "input": {
-        "query": {
-          "v": "9bZkp7q19f0",
-          "t": "1m05s"
-        }
-      }
-    }
-  ]
-}
-```
-
-This model instructs fuzzeREST to send requests to the service listening for `http` connections at the host `localhost` port `8080`. These requests will be targeted to the `/watch` endpoint using the `GET` method and an input query consisting of two parameters `v` and `t` with the initial values `9bZkp7q19f0` and `1m05s` respectively.
+For example, the tutorial model file [tutorial.json](fuzzerest/models/tutorial.json) defines the required details to fuzz the `/watch` endpoint hosted at the `example` domain. This model instructs fuzzeREST to send requests to the service listening for `http` connections at the host `localhost` port `8080`. These requests will be targeted to the `/watch` endpoint using the `GET` method and an input query consisting of two parameters `v` and `t` with the initial values `9bZkp7q19f0` and `1m05s` respectively.
 
 ## Fuzz it!
 
-Run the fuzzer client to send three (`-i=3`) requests using the `tutorial.json` model file (`--model-path fuzzerest/models/tutorial.json`) against the `example` domain (`--domain example`) with full debug log (`--loglevel 0`) for further analysis:
+Run the fuzzer client to send three (`-i=3`) requests using the [tutorial.json](fuzzerest/models/tutorial.json) model file (`--model-path fuzzerest/models/tutorial.json`) against the `default` domain (`--domain default`) with full debug log (`--loglevel 0`) for further analysis:
 
 ```
-$ fuzzerest -i=3 --model-path fuzzerest/models/tutorial.json --domain example --loglevel 0
+$ fuzzerest -i=3 --model-path fuzzerest/models/tutorial.json --loglevel 0
 ```
 
 Running the fuzzer successfully will generate no feedback output and leave the results under the `results` directory. Here we can have a more detailed look of how fuzzeREST has sent the requests and how certain data fields were modified to fuzz the target endpoint.
@@ -70,9 +43,9 @@ $ cat results/20170907164501_all_uris_all_methods.log
 fuzzeREST will also log information about the response received by the service and more details about the request sent:
 
 ```
-$ cat results/20170907164501_all_uris_all_methods.log
+$ cat results/20210405134218-tutorial_all_uris_all_methods.log
 (...)
-2017-09-07 16:45:01,513 ERROR: {"method": "GET", "headers": {"X-fuzzeREST-State": "0"}, "url": "http://localhost:8080/watch?v[]=9bZkp7q19f0&t=0m00m00s", "body": null, "size": 359, "response": "{\"success\": false, \"reason\": \"Not found\"}\n", "reason": "OK", "httpcode": 200, "time": 0.049}
+2021-04-05 13:34:17,907 DEBUG: {'method': 'GET', 'headers': {'X-fuzzeREST-State': '0'}, 'body': None, 'delay': 0, 'url': 'http://localhost:8080/watch?v[]=9bZkp7q19f0&t[]=1m05s', 'size': 81, 'time': 0.004, 'error': None, 'response_text': '{"success": false, "reason": "Video not found"}\n', 'status_code': 200}
 (...)
 ```
 
@@ -100,24 +73,24 @@ The above modification to the model will instruct fuzzeREST to mutate the `t` da
 Run the fuzzer again and see the differences with the new model:
 
 ```
-$ fuzzerest -i=3 --model-path fuzzerest/models/tutorial.json --domain example --loglevel 0
+$ fuzzerest -i=3 --model-path fuzzerest/models/tutorial.json --domain default --loglevel 1
 ```
 
 In the results below you can verify how the `t` data field has been mutated differently this time by leaving the data chunks `1m` and `05s` intact:
 
 ```
-$ cat results/20170907182405_all_uris_all_methods.log
+$ cat results/20210405134244-tutorial_all_uris_all_methods.log
 (...)
-2017-09-07 18:24:05,402 DEBUG: http://localhost:8080 "GET /watch?v[]=9bZkp7q19f0&t=1m%20%20%20%C2%9F%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%C2%80a%C2%8Aa05s HTTP/1.1" 200 None
+2021-04-05 13:42:52,962 WARNING: state=1 method=GET uri=/watch code=200 error="None"
+2021-04-05 13:42:52,962 DEBUG: {'method': 'GET', 'headers': {'X-fuzzeREST-State': '1'}, 'body': None, 'delay': 0, 'url': 'http://localhost:8080/watch?v=340282366920938463463374607431768211457bZkp7q19f0&t=1m340282366920938463463374607431768211457m05s', 'size': 155, 'time': 0.003, 'error': None, 'response_text': '{"success": false, "reason": "Video not found"}\n', 'status_code': 200}
 (...)
-2017-09-07 18:24:05,430 DEBUG: http://localhost:8080 "GET /watch?v=340282366920938463463374607431768211457bZkp7q19f0&t=1mo%CC%82%C2%8F%C2%BF3%E2%81%844a05s HTTP/1.1" 200 None
 ```
 
 ## Constants
 
 For more granular control, fuzzeREST allows you to lock placeholders with an unchangeable value. These constants can be defined in either a file like [constants.json](test/constants.json) or via CLI arguments.
 
-First, update the fuzzing model `tutorial.json` to include two new constants names as `{endpoint}` and `{time}`:
+First, update the fuzzing model [tutorial.json](fuzzerest/models/tutorial.json) to include two new constants names as `{endpoint}` and `{time}`:
 
 ```
   "endpoints": [
@@ -135,7 +108,7 @@ First, update the fuzzing model `tutorial.json` to include two new constants nam
   ]
 ```
 
-Next, define the value of the new constant `{endpoint}` in the `constants.json` file as follows:
+Next, define the value of the new constant `{endpoint}` in the [constants.json](test/constants.json) file as follows:
 
 ```
 {
@@ -143,10 +116,10 @@ Next, define the value of the new constant `{endpoint}` in the `constants.json` 
 }
 ```
 
-Then, use the command line parameters `--constants` and `--constants-file` to define the value of the `{time}` constant, and to include the `constants.json` file respectively:
+Then, use the command line parameters `--constants` and `--constants-file` to define the value of the `{time}` constant, and to include the [constants.json](test/constants.json) file respectively:
 
 ```
-(...) --constants '{"{time}": "1m05s"}' --constants-file test/constants.json (...)
+$ fuzzerest -i=3 --model-path fuzzerest/models/tutorial.json --domain default --loglevel 1 --constants '{"{time}": "1m05s"}' --constants-file test/constants.json
 ```
 
 ## Fuzz it, once more
@@ -154,13 +127,13 @@ Then, use the command line parameters `--constants` and `--constants-file` to de
 Run the fuzzer with the new command line and see how the constants get replaced in the results:
 
 ```
-$ fuzzerest -i=3 --model-path fuzzerest/models/tutorial.json --domain example --constants '{"{time}": "1m05s"}' --constants-file test/constants.json --loglevel 0
+$ fuzzerest -i=3 --model-path fuzzerest/models/tutorial.json --domain default --loglevel 1 --constants '{"{time}": "1m05s"}' --constants-file test/constants.json
 
-$ cat results/20171204173210_all_uris_all_methods.log
+$ cat results/20210405135517-tutorial_all_uris_all_methods.log
 (...)
-2017-12-04 17:32:10,403 DEBUG: http://localhost:8080 "GET /watch?v=340282366920938463463374607431768211457bZkp7q19f0&t=%3Cimg%20%5Cx12src%3Dx%20onerror%3D%22javascript%3Aalert%281%29%22%3E HTTP/1.1" 200 None
+2021-04-05 13:55:17,886 DEBUG: http://localhost:8080 "GET /watch?v=340282366920938463463374607431768211457bZkp7q19f0&t=340282366920938463463374607431768211457m05s HTTP/1.1" 200 48
 (...)
-2017-12-04 17:32:10,425 DEBUG: http://localhost:8080 "GET /watch?v=9bZkp7q19fp7q19fp7qbZkp7q19bZkp7q19bZkp7q255f429bZkp7q197&t=1m05s HTTP/1.1" 200 None
+2021-04-05 13:55:17,897 DEBUG: http://localhost:8080 "GET /watch?v=9bZkp7q19fp7q19fp7qbZkp7q19bZkp7q19bZkp7q255f429bZkp7q197&t=1m05s HTTP/1.1" 200 48
 ```
 
 ## Behavior replication
@@ -172,7 +145,7 @@ For portability, fuzzeREST can export a particular request configuration to [cur
 consider the following command to demonstrate:
 
 ```
-$ fuzzerest -s 3 --model-path fuzzerest/models/tutorial.json --domain example --constants '{"{time}": "1m05s"}' --constants-file test/constants.json --loglevel 0 --printcurl -u /watch --method GET
+$ fuzzerest -s 3 --model-path fuzzerest/models/tutorial.json --domain default --constants '{"{time}": "1m05s"}' --constants-file test/constants.json --loglevel 0 --printcurl -u /watch --method GET
 ```
 
 ... generates the following output:
