@@ -19,14 +19,6 @@ Mutator = mutator.Mutator
 
 
 domain = "local"
-default_expectations = {
-    "default": [
-        "code = int(result.get('httpcode', 0))",
-        "expectation = (code >= 400 and code < 500) or "
-        + "('error' in result.get('response', '').lower() and code < 400)",
-    ]
-}
-
 
 @pytest.fixture(scope="function")
 def fuzzer(config):
