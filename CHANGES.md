@@ -1,3 +1,11 @@
+# 1.0.1
+
+2021-04-08
+
+- Allow user to configure an optional info header with a constant value.
+  This may be useful for users who wish to provide info to observers of
+  a fuzzing target, such as admins of a bug bounty project.
+
 # 1.0.0
 
 2021-04-04
