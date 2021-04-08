@@ -221,6 +221,9 @@ class Fuzzer:
         )
         payload["headers"]["X-fuzzeREST-State"] = str(self.state)
 
+        if self.config.include_extra_info_in_request_headers:
+            payload["headers"]["X-Extra-Info"] = self.config.extra_info
+
         return payload
 
     def send_payload(self, payload, method, timeout, delay=0):

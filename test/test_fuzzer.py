@@ -21,6 +21,7 @@ Mutator = mutator.Mutator
 
 domain = "local"
 
+
 @pytest.fixture(scope="function")
 def fuzzer(config):
     return Fuzzer(config.example_json_file, domain)
@@ -233,7 +234,27 @@ def test_mutate_payload_body_and_query(fuzzer):
     assert payload.get("query") is not None, "payload should have query input"
 
 
-def test_mutate_payload_headers(fuzzer):
+@pytest.mark.kwparametrize(
+    dict(
+        include_extra_info=False,
+    ),
+    dict(
+        include_extra_info=True,
+    ),
+)
+@pytest.mark.kwparametrize(
+    dict(
+        extra_info="hi_friends@12345.com",
+    ),
+)
+def test_mutate_payload_headers(fuzzer, include_extra_info, extra_info):
+    assert (
+        fuzzer.config.include_extra_info_in_request_headers is False
+    ), "Default should be False"
+
+    fuzzer.config.include_extra_info_in_request_headers = include_extra_info
+    fuzzer.config.extra_info = extra_info
+
     payload = fuzzer.mutate_payload(
         next(
             (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/json"),
@@ -256,6 +277,11 @@ def test_mutate_payload_headers(fuzzer):
     ), "Authorization header should have intact non-placeholder string"
     assert "{token}" not in payload["headers"]["Authorization"], (
         "Authorization header should have mutated token placeholder",
+    )
+    assert (
+        payload["headers"].get("X-Extra-Info") == extra_info
+        if include_extra_info
+        else payload["headers"].get("X-Extra-Info") is None
     )
 
 

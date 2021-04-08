@@ -64,6 +64,10 @@ class Config:
         self.slack_status_update_interval_seconds = self.parser.getint(
             "DEFAULT", "slack_status_update_interval_seconds"
         )
+        self.extra_info = self.parser.get("DEFAULT", "extra_info")
+        self.include_extra_info_in_request_headers = self.parser.getboolean(
+            "DEFAULT", "include_extra_info_in_request_headers"
+        )
 
         self.example_json_file = self.parser.get("test", "example_json_file")
         self.example_expectations_file = self.parser.get(
