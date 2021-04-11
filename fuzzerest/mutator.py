@@ -21,6 +21,7 @@ class Radamsa:
 
     def get(self, value: str, encoding: str, seed: int = -1) -> bytes:
         if not self.ready:
+            self.config.root_logger.warning("Generating empty output")
             return b""
 
         if seed == -1:
@@ -117,7 +118,11 @@ class Mutator:
         roll = self.roll_dice(1, 3)
 
         if roll == 1:
-            mutated_val = self.mutate_radamsa(value)
+            mutated_val = (
+                self.mutate_radamsa(value)
+                if self.radamsa.ready
+                else self.pick_from_fuzzdb()
+            )
         elif roll == 2:
             mutated_val = self.juggle_type(value)
         elif roll == 3:
