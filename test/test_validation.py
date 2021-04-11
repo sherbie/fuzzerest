@@ -1,4 +1,7 @@
+import json
+
 import pytest
+import yaml
 
 from fuzzerest.schema import validation
 from fuzzerest.schema.validation import ValidationError
@@ -72,3 +75,19 @@ def test_validate_object_against_schema(
 
         assert status.ok if should_pass else not status.ok
         assert status.errors if not should_pass else not status.errors
+
+
+def test_default_expectations(config):
+
+    with open(config.expectations_path, "r") as f:
+        default_expectations = json.load(f)
+
+    with open(config.expectations_schema_path, "r") as handle:
+        expectations_schema = yaml.load(handle, Loader=yaml.FullLoader)
+
+    validation.validate_object_against_schema(
+        input_object=default_expectations,
+        schema_object=expectations_schema,
+        raise_on_error=True,
+        strict=True,
+    )

@@ -51,6 +51,9 @@ class Config:
         self.expectations_path = os.path.join(
             self._pwd, self.parser.get("DEFAULT", "default_expectations")
         )
+        self.expectations_schema_path = os.path.join(
+            self._pwd, self.parser.get("DEFAULT", "expectations_schema")
+        )
         self.maximum_url_size_in_bytes = self.parser.getint(
             "DEFAULT", "maximumUrlSizeInBytes"
         )
