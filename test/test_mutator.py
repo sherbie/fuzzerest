@@ -1,15 +1,35 @@
 import copy
 import json
+import os
 import re
 import sys
 from collections import OrderedDict
 
+import pytest
+
 from fuzzerest.fuzzer import Fuzzer
-from fuzzerest.mutator import Mutator
+from fuzzerest.mutator import Radamsa
 
 n_times = 10000
 tolerance = 0.015
 sample = "abcdef0123456789öåä!#€%&/()=?©@£$∞§|[]≈±´~^¨*abcdef0123456789öåä!#€%&/()=?©@£$∞§|[]≈±´~^¨*"
+
+
+@pytest.mark.kwparametrize(
+    dict(
+        override_path=True,
+    ),
+    dict(
+        override_path=False,
+    ),
+)
+def test_radamsa_config(mocker, override_path):
+    if override_path:
+        mocker.patch.object(os.environ, "get", return_value="bad/path")
+    radamsa = Radamsa()
+    assert not radamsa.ready if override_path else radamsa.ready
+    byte_output = radamsa.get("test", "unicode_escape")
+    assert not byte_output if override_path else byte_output
 
 
 def test_chance(mutator):
