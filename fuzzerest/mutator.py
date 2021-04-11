@@ -12,10 +12,33 @@ PROJECT_DIR = str(Path(_pwd).parents[0])
 CONFIG = configparser.ConfigParser()
 CONFIG.read(os.path.join(_pwd, "config", "config.ini"))
 
-_radamsa_bin_env = os.environ.get("RADAMSA_BIN")
-_radamsa_bin_config = os.path.join(PROJECT_DIR, CONFIG.get("DEFAULT", "radamsa_bin"))
 
-RADAMSA_BIN = _radamsa_bin_env if _radamsa_bin_env is not None else _radamsa_bin_config
+class Radamsa:
+    def __init__(self):
+        radamsa_bin_config = os.path.join(
+            PROJECT_DIR, CONFIG.get("DEFAULT", "radamsa_bin")
+        )
+        path = Path(os.environ.get("RADAMSA_BIN", radamsa_bin_config))
+        self.ready = path.exists() and path.is_file()
+        self.bin_path = str(path.resolve())
+
+    def get(self, value: str, encoding: str, seed: int = -1) -> bytes:
+        if not self.ready:
+            return b""
+
+        if seed == -1:
+            radamsa_process = Popen(
+                [self.bin_path], stdout=PIPE, stdin=PIPE, stderr=STDOUT
+            )
+        else:
+            radamsa_process = Popen(
+                [self.bin_path, "-s", str(seed)],
+                stdout=PIPE,
+                stdin=PIPE,
+                stderr=STDOUT,
+            )
+
+        return radamsa_process.communicate(input=value.encode(encoding))[0]
 
 
 class Mutator:
@@ -24,6 +47,7 @@ class Mutator:
         self.change_state(state)
         self.fuzzdb_array = fuzzdb_array
         self.byte_encoding = byte_encoding
+        self.radamsa = Radamsa()
 
     def change_state(self, new_state):
         self.state = new_state
@@ -49,31 +73,16 @@ class Mutator:
 
         return output
 
-    def mutate_radamsa(self, value):
+    def mutate_radamsa(self, value) -> str:
         """
         Mutate the value and encode the mutator output using byte_encoding.
         :param value: seed value for the mutator
         :param byte_encoding: name of the byte encoding method defined in the python encodings library
         :return:
         """
-        value = str(value)
-        if self.state == -1:
-            radamsa_process = Popen(
-                [RADAMSA_BIN], stdout=PIPE, stdin=PIPE, stderr=STDOUT
-            )
-        else:
-            radamsa_process = Popen(
-                [RADAMSA_BIN, "-s", str(self.state)],
-                stdout=PIPE,
-                stdin=PIPE,
-                stderr=STDOUT,
-            )
-
-        radamsa_output = radamsa_process.communicate(
-            input=value.encode(self.byte_encoding)
-        )[0]
-
-        return self.safe_decode(radamsa_output)
+        return self.safe_decode(
+            self.radamsa.get(str(value), self.byte_encoding, self.state)
+        )
 
     def juggle_type(self, value):
 
