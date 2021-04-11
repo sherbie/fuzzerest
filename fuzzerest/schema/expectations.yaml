@@ -1,5 +1,9 @@
-default:
-  type: list
+expectations:
+  type: dict
   required: true
   schema:
-    type: string
+    default:
+      type: list
+      required: true
+      schema:
+        type: string

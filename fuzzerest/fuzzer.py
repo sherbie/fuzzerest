@@ -125,7 +125,7 @@ class Fuzzer:
             with open(self.config.expectations_path, "r") as file:
                 self.default_expectations = json.loads(
                     file.read(), object_pairs_hook=OrderedDict
-                )
+                )["expectations"]
         except FileNotFoundError:
             self.config.root_logger.error(
                 "Expectation file "
