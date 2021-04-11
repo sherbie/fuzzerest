@@ -1,4 +1,3 @@
-import configparser
 import copy
 import os
 import random
@@ -6,19 +5,13 @@ import re
 from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen
 
-_pwd = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = str(Path(_pwd).parents[0])
-
-CONFIG = configparser.ConfigParser()
-CONFIG.read(os.path.join(_pwd, "config", "config.ini"))
+from fuzzerest.config.config import Config
 
 
 class Radamsa:
     def __init__(self):
-        radamsa_bin_config = os.path.join(
-            PROJECT_DIR, CONFIG.get("DEFAULT", "radamsa_bin")
-        )
-        path = Path(os.environ.get("RADAMSA_BIN", radamsa_bin_config))
+        self.config = Config()
+        path = Path(os.environ.get("RADAMSA_BIN", self.config.radamsa_bin_path))
         self.ready = path.exists() and path.is_file()
         self.bin_path = str(path.resolve())
 

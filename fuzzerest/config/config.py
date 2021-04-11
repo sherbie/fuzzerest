@@ -68,6 +68,9 @@ class Config:
         self.include_extra_info_in_request_headers = self.parser.getboolean(
             "DEFAULT", "include_extra_info_in_request_headers"
         )
+        self.radamsa_bin_path = str(
+            Path(self.parser.get("DEFAULT", "radamsa_bin")).resolve()
+        )
 
         self.example_json_file = self.parser.get("test", "example_json_file")
         self.example_expectations_file = self.parser.get(
