@@ -1,3 +1,10 @@
+# 1.0.2
+
+2021-04-11
+
+- Create abstraction layer for radamsa binary. The fuzzer can continue
+  to operate if radamsa is not found.
+
 # 1.0.1
 
 2021-04-08
