@@ -1,8 +1,0 @@
-{
-  "expectations": {
-    "default": [
-      "code = summary.status_code",
-      "expectation = (code >= 400 and code < 500) or ('error' in summary.response_text.lower() and code < 400)"
-    ]
-  }
-}

@@ -123,16 +123,14 @@ class Fuzzer:
 
         try:
             with open(self.config.expectations_path, "r") as file:
-                self.default_expectations = json.loads(
-                    file.read(), object_pairs_hook=OrderedDict
-                )["expectations"]
+                self.default_expectations = json.load(file)["expectations"]
         except FileNotFoundError:
             self.config.root_logger.error(
                 "Expectation file "
                 + self.config.expectations_path
                 + " was unable to open. Default expectations were not set."
             )
-            self.default_expectations = {}
+            self.default_expectations = []
 
         self.mutator = mutator.Mutator(self.config.fuzz_db_array, state)
 
@@ -150,10 +148,10 @@ class Fuzzer:
         self.last_slack_status_update = time()
 
     @staticmethod
-    def evaluate_expectations(expectations_obj, summary: Summary):
+    def evaluate_expectations(expectations: list, summary: Summary) -> bool:
         """
-        Determine if the data contained in result meets the requirements provided in expectations_obj.
-        :param expectations_obj: A list of code to be evaluated to determine if result is acceptable
+        Determine if the data contained in result meets the requirements provided in expectations.
+        :param expectations: A list of code to be evaluated to determine if result is acceptable
         :param summary: A Summary object provided by send_payload
         :return: boolean: True if the result meets the expectation
         """
@@ -162,10 +160,8 @@ class Fuzzer:
         expectation = False
         vlocals = locals()
 
-        if expectations_obj:
-            for k in expectations_obj.keys():
-                for e in expectations_obj[k]:
-                    exec(e, globals(), vlocals)
+        for e in expectations:
+            exec(e, globals(), vlocals)
 
         return vlocals["expectation"]
 
@@ -312,20 +308,18 @@ class Fuzzer:
 
         return endpoints
 
-    def get_expectations(self, endpoint_obj):
+    def get_expectations(self, endpoint_obj: dict) -> list:
         """
         Get the most granular expectations available for the endpoint.
         :param endpoint_obj: an entry in the endpoints list of the data model
         :return: a list of code used in evaluate_expectations()
         """
-        expectations = OrderedDict({})
         if endpoint_obj.get("expectations", False):
-            expectations["local"] = endpoint_obj["expectations"]
+            return endpoint_obj["expectations"]
         elif self.model_obj.get("expectations", False):
-            expectations["global"] = self.model_obj["expectations"]
+            return self.model_obj["expectations"]
         else:
-            expectations = self.default_expectations
-        return expectations
+            return self.default_expectations
 
     def iterate_endpoints(self):
         """

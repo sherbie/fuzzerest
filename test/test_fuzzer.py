@@ -67,9 +67,7 @@ def init_methods(config, fuzzer):
 
 def init_expectations(fuzzer, config):
     e = fuzzer.default_expectations
-    assert e is not None and e != {}, (
-        "default expectations should have loaded from " + config.example_json_file
-    )
+    assert e, "default expectations should have loaded from " + config.example_json_file
 
 
 def init_mutator(fuzzer):
@@ -95,6 +93,26 @@ def log_last_state_used(fuzzer):
     fuzzer.log_last_state_used(0)
 
 
+@pytest.mark.kwparametrize(
+    dict(
+        expectations=["expectation = True"],
+        success=True,
+    ),
+    dict(
+        expectations=["expectation = False"],
+        success=False,
+    ),
+)
+def test_evaluate_expectations(expectations, success):
+    assert (
+        Fuzzer.evaluate_expectations(
+            expectations,
+            Summary(method="GET", headers={}, body={}, timestamp=2, url=""),
+        )
+        is success
+    )
+
+
 def test_evaluate_endpoint_expectation(config):
     with open(config.example_json_file, "r") as model_file:
         model = json.loads(model_file.read())
@@ -103,13 +121,13 @@ def test_evaluate_endpoint_expectation(config):
     summary = Summary(method="GET", headers={}, body={}, timestamp=2, url="")
     summary.status_code = 200
 
-    expectations = OrderedDict({})
+    expectations = []
     assert not Fuzzer.evaluate_expectations(
         expectations, summary
     ), "should be false if expectation obj is empty"
 
     if endpoint.get("expectations", False):
-        expectations["local"] = endpoint["expectations"]
+        expectations = endpoint["expectations"]
 
     assert Fuzzer.evaluate_expectations(
         expectations, summary
@@ -131,16 +149,6 @@ def test_evaluate_endpoint_expectation(config):
         expectations, summary
     ), "summary should not be expected because the httpcode is missing"
 
-    expectations = OrderedDict(
-        [
-            ("default1", ["expectation = True"]),
-            ("default2", ["expectation = False"]),
-        ]
-    )
-    assert not Fuzzer.evaluate_expectations(
-        expectations, summary
-    ), "should be false because default2 overrides default1"
-
 
 def get_expectations(fuzzer, config):
     endpoint = next(
@@ -157,7 +165,7 @@ def get_expectations(fuzzer, config):
         (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/complex/qstring"),
         None,
     )
-    fuzzer.default_expectations = {"default": ["expectation = True"]}
+    fuzzer.default_expectations = ["expectation = True"]
     expectations = fuzzer.get_expectations(endpoint)
     assert len(expectations) == 1, "should only find 1 key in expectation obj"
     assert (
