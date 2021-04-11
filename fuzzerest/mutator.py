@@ -14,6 +14,10 @@ class Radamsa:
         path = Path(os.environ.get("RADAMSA_BIN", self.config.radamsa_bin_path))
         self.ready = path.exists() and path.is_file()
         self.bin_path = str(path.resolve())
+        if not self.ready:
+            self.config.root_logger.error(
+                "Unable to locate radamsa binary at %s", self.bin_path
+            )
 
     def get(self, value: str, encoding: str, seed: int = -1) -> bytes:
         if not self.ready:
