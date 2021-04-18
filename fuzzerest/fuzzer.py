@@ -11,10 +11,12 @@ from collections import OrderedDict
 from time import localtime, strftime, time
 
 import slackclient
+import yaml
 
 from fuzzerest import mutator, request
 from fuzzerest.config.config import Config
 from fuzzerest.request import Summary
+from fuzzerest.schema import validation
 
 
 class Fuzzer:
@@ -248,7 +250,34 @@ class Fuzzer:
         :return: data model with injected constants
         """
         with open(self.model_file_path, "r") as model_file:
-            return json.loads(model_file.read(), object_pairs_hook=OrderedDict)
+            model = json.loads(model_file.read(), object_pairs_hook=OrderedDict)
+
+        with open(self.config.model_schema_path, "r") as model_schema_file:
+            schema = yaml.load(model_schema_file, Loader=yaml.FullLoader)
+
+        status = validation.validate_object_against_schema(
+            input_object=model,
+            schema_object=schema,
+            strict=False,
+        )
+
+        # TODO: validate expectations
+
+        if not status.errors:
+            return model
+        else:
+            try:
+                self.config.root_logger.error(
+                    "Model %s failed to validate against schema %s: %s",
+                    self.model_file_path,
+                    self.config.model_schema_path,
+                    status.errors,
+                )
+                return self.model_obj
+            except AttributeError:
+                raise validation.ValidationError(
+                    f"Model {self.model_file_path} failed to validate against schema {self.config.model_schema_path}: {status.errors}"
+                )
 
     def get_curl_query_string(self):
         """
