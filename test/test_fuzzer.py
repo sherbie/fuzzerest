@@ -1,12 +1,8 @@
 import json
 import logging
 import time
-import urllib
-from collections import OrderedDict
-from urllib.parse import urlparse
 
 import pytest
-import requests
 
 from fuzzerest import mutator, request
 from fuzzerest.fuzzer import Fuzzer
