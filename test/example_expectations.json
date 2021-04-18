@@ -1,16 +1,18 @@
 {
-  "domains": {
-    "example": {
+  "domains": [
+    {
+      "name": "example",
       "host": "localhost",
       "port": null,
       "protocol": "http"
     },
-    "local": {
+    {
+      "name": "local",
       "host": "localhost",
       "port": 8080,
       "protocol": "http"
     }
-  },
+  ],
   "expectations": [
     "expectation = True"
   ],

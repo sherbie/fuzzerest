@@ -96,12 +96,12 @@ def test_default_expectations(config):
 
 
 @pytest.mark.kwparametrize(
-    dict(model_file_name="template.json"), dict(model_file_name="tutorial.json")
+    dict(model_file_name="../fuzzerest/models/template.json"),
+    dict(model_file_name="../fuzzerest/models/tutorial.json"),
+    dict(model_file_name="example_expectations.json"),
 )
 def test_validate_models(config, model_file_name):
-    with open(
-        Path(os.path.dirname(__file__)) / "../fuzzerest/models" / model_file_name
-    ) as f:
+    with open(Path(os.path.dirname(__file__)) / model_file_name) as f:
         model = json.load(f)
 
     with open(config.model_schema_path) as f:

@@ -1,21 +1,24 @@
 {
-  "domains": {
-    "example": {
+  "domains": [
+    {
+      "name": "example",
       "host": "localhost",
       "port": null,
       "protocol": "http"
     },
-    "local": {
+    {
+      "name": "local",
       "host": "localhost",
       "port": 8080,
       "protocol": "http"
     },
-    "default": {
+    {
+      "name": "default",
       "host": "localhost",
       "port": 8080,
       "protocol": "http"
     }
-  },
+  ],
   "requestsPerSecond": 500,
   "endpoints": [
     {

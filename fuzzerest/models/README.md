@@ -1,26 +1,28 @@
 ## Models
 
-The fuzzer requires a JSON model giving it a description of what and how to attack. A model template is available at `template.json` and a full example is given in `example.json`.
+The fuzzer requires a JSON model giving it a description of what and how to attack. A model template is available at `template.json` and a full example is given in `example.json`. Models are validated using [Cerberus](https://docs.python-cerberus.org/).
 
 ### Structure
 
-Particular model fields would require an elaboration (optional fields are contained in parentheses):
-- `domains`: a dictionary of top-level domains, each domain key is the domain identifier, has the following fields:
+For more specific on structure constraints, such as whether a field is optional or nullable, see [model.yaml](../schema/model.yaml).
+
+- `domains`: list of dictionaries describing top-level domains with the following fields:
+    - `name`: a user-defined string which uniquely identifies the target
     - `host`: hostname of the target service
     - `port`: tcp/ip port number of the target service, if set to `null` it will default to 80
     - `protocol`: the transport protocol, can be either `http` or `https`
-- `(expectations)`: global expectation (see *Expectations* section)
+- `expectations`: global expectation (see [Expectations](#expectations))
 - `endpoints`: list of dictionaries describing each service endpoint, each dictionary has the following fields:
-    - `uri`: route path of the service (e.g. `http://github.com[/uri]`), has special mutation behavior (see *Mutation Behavior* section)
-    - `(timeout)`: the maximum time (seconds) between the request content sent and the response content to be received
-    - `(headers)`: dictionary of request headers, has special mutation behavior (see *Mutation Behavior* section)
-    - `(methods)`: list of http request methods, if this field is skipped, the fuzzer will use a pre-defined list of methods
-    - `(comment)`: this is a cosmetic field which is only for user readability
-    - `input`: the request's payload, which is either body, query, or both, has the following fields:
+    - `uri`: route path of the service (e.g. `http://github.com[/uri]`), has special mutation behavior (see [Field Mutation](#field-mutation))
+    - `timeout`: the maximum time (seconds) between the request content sent and the response content to be received
+    - `headers`: a dictionary of request headers, has special mutation behavior (see [Field Mutation](#field-mutation))
+    - `methods`: list of http request methods, if this field is skipped, the fuzzer will use a pre-defined list of methods
+    - `comment`: this is a cosmetic field which is only for user readability
+    - `input`: the request's payload:
         - `body`: represents data sent in the request body, this will typically require a JSON content-type header to function correctly
         - `query`: dictionary of url query parameters
-    - `(expectations)`: local expectation (see *Expectations* section)
-- `(requestsPerSecond)`: if set, the fuzzer will send this many requests in one second. Any value that is 0 or less means there is no delay before sending a request. This value can be defined globally in the model and locally in an endpoint. If both are defined, the local value will override the global one.
+    - `expectations`: local expectation (see [Expectations](#expectations))
+    - `requestsPerSecond`: if set, the fuzzer will send this many requests in one second. Any value that is 0 or less means there is no delay before sending a request. This value can be defined globally in the model and locally in an endpoint. If both are defined, the local value will override the global one.
 
 ### Field Mutation
 
