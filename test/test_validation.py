@@ -79,7 +79,7 @@ def test_validate_object_against_schema(
         assert status.errors if not should_pass else not status.errors
 
 
-def test_default_expectations(config):
+def test_validate_default_expectations(config):
 
     with open(config.expectations_path, "r") as f:
         default_expectations = json.load(f)
@@ -93,6 +93,36 @@ def test_default_expectations(config):
         raise_on_error=True,
         strict=True,
     )
+
+
+@pytest.mark.kwparametrize(
+    dict(model_file_name="../fuzzerest/models/template.json"),
+    dict(model_file_name="../fuzzerest/models/tutorial.json"),
+    dict(model_file_name="example_expectations.json"),
+)
+def test_validate_expectations(config, model_file_name):
+    with open(Path(os.path.dirname(__file__)) / model_file_name) as f:
+        model = json.load(f)
+
+    with open(config.expectations_schema_path) as f:
+        expectations_schema = yaml.load(f, Loader=yaml.FullLoader)
+
+    if model.get("expectations"):
+        validation.validate_object_against_schema(
+            input_object=model,
+            schema_object=expectations_schema,
+            raise_on_error=True,
+            strict=False,
+        )
+
+    for endpoint in model.get("endpoints"):
+        if endpoint.get("expectations"):
+            validation.validate_object_against_schema(
+                input_object=endpoint,
+                schema_object=expectations_schema,
+                raise_on_error=True,
+                strict=False,
+            )
 
 
 @pytest.mark.kwparametrize(

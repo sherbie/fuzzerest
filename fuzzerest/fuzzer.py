@@ -55,6 +55,20 @@ class Fuzzer:
                 self.config.slack_client_token,
             )
 
+    def validate_expectations(self, model: dict = {}, raise_on_error: bool = False):
+        with open(self.config.expectations_schema_path, "r") as schema_file:
+            schema = yaml.load(schema_file, Loader=yaml.FullLoader)
+
+        if model.get("expectations"):
+            return validation.validate_object_against_schema(
+                input_object=model,
+                schema_object=schema,
+                strict=False,
+                raise_on_error=raise_on_error,
+            )
+
+        return validation.Status(error_object={})
+
     def __init__(
         self,
         model_file_path,
@@ -85,9 +99,9 @@ class Fuzzer:
         self.global_timeout = global_timeout
         self.state = state
         self.starting_state = state
-        self.model_obj = self.load_model()
-        self.uri = uri if uri else None
         self.config = config_obj if config_obj else Config()
+        self.uri = uri if uri else None
+        self.model_obj = self.load_model()
         self.model_reload_rate = self.config.model_reload_interval_seconds
         self.time_since_last_model_check = 0.0
 
@@ -125,7 +139,19 @@ class Fuzzer:
 
         try:
             with open(self.config.expectations_path, "r") as file:
-                self.default_expectations = json.load(file)["expectations"]
+                expectations = json.load(file)
+
+            status = self.validate_expectations(model=expectations)
+            if not status.ok:
+                self.config.root_logger.error(
+                    "Expectation file %s failed validation: %s. Default expectations were not set.",
+                    self.config.expectations_path,
+                    status.errors,
+                )
+                self.default_expectations = []
+            else:
+                self.default_expectations = expectations["expectations"]
+
         except FileNotFoundError:
             self.config.root_logger.error(
                 "Expectation file "
@@ -261,9 +287,27 @@ class Fuzzer:
             strict=False,
         )
 
-        # TODO: validate expectations
-
         if not status.errors:
+            exp_status = self.validate_expectations(model)
+
+            if exp_status.ok:
+                for endpoint in Fuzzer.get_endpoints(model["endpoints"], self.uri):
+                    exp_status = self.validate_expectations(endpoint)
+                    if not exp_status.ok:
+                        break
+            if not exp_status.ok:
+                self.config.root_logger.error(
+                    "Model %s failed to validate against schema %s: %s",
+                    self.model_file_path,
+                    self.config.expectations_schema_path,
+                    exp_status.errors,
+                )
+                try:
+                    return self.model_obj
+                except AttributeError:
+                    raise validation.ValidationError(
+                        f"Model {self.model_file_path} failed to validate against schema {self.config.model_schema_path}: {status.errors}"
+                    )
             return model
         else:
             try:
