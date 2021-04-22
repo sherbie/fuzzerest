@@ -124,11 +124,6 @@ def send_request(
 
     try:
         url, headers_obj = sanitize(domain_obj, uri, query_obj, headers_obj)
-    except:
-        # TODO
-        pass
-
-    try:
         body_str = json.dumps(body_obj)
 
         response = requests.request(
