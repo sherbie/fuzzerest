@@ -19,6 +19,10 @@ from fuzzerest.request import Summary
 from fuzzerest.schema import validation
 
 
+class DomainNameNotFoundError(BaseException):
+    pass
+
+
 class Fuzzer:
     def log_last_state_used(self, state):
         self.config.root_logger.log(
@@ -102,6 +106,12 @@ class Fuzzer:
         self.config = config_obj if config_obj else Config()
         self.uri = uri if uri else None
         self.model_obj = self.load_model()
+
+        if not self.get_domain_spec():
+            raise DomainNameNotFoundError(
+                f"Domain name {self.domain} could not be found in model loaded from {self.model_file_path}"
+            )
+
         self.model_reload_rate = self.config.model_reload_interval_seconds
         self.time_since_last_model_check = 0.0
 
@@ -250,6 +260,12 @@ class Fuzzer:
 
         return payload
 
+    def get_domain_spec(self) -> dict:
+        domains = [d for d in self.model_obj["domains"] if d["name"] == self.domain]
+        if len(domains) < 1:
+            return {}
+        return domains[0]
+
     def send_payload(self, payload, method, timeout, delay=0):
         """
         Send the payload
@@ -260,7 +276,7 @@ class Fuzzer:
         :return: Summary object
         """
         return request.send_request(
-            self.model_obj["domains"][self.domain],
+            self.get_domain_spec(),
             payload["uri"],
             method,
             timeout,
@@ -346,7 +362,7 @@ class Fuzzer:
 
         return request.construct_curl_query(
             self.config.curl_data_file_path,
-            self.model_obj["domains"][self.domain],
+            self.get_domain_spec(),
             payload["uri"],
             method,
             payload["headers"],

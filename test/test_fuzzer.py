@@ -5,7 +5,7 @@ import time
 import pytest
 
 from fuzzerest import mutator, request
-from fuzzerest.fuzzer import Fuzzer
+from fuzzerest.fuzzer import DomainNameNotFoundError, Fuzzer
 from fuzzerest.request import Summary
 
 root_logger = logging.getLogger()
@@ -83,6 +83,32 @@ def init_logger(fuzzer, config):
     fuzzy = Fuzzer(config.example_json_file, domain, methods=methods, uri=uri)
     expected_file_name = "-json_" + "_".join(methods)
     assert expected_file_name in fuzzy.log_file_name
+
+
+@pytest.mark.kwparametrize(
+    dict(
+        domain_name="bad_name",
+        expect_exception=DomainNameNotFoundError,
+    ),
+    dict(
+        domain_name="",
+        expect_exception=DomainNameNotFoundError,
+    ),
+    dict(
+        domain_name=None,
+        expect_exception=DomainNameNotFoundError,
+    ),
+    dict(
+        domain_name="example",
+        expect_exception=None,
+    ),
+)
+def test_init_domain(config, domain_name, expect_exception):
+    if expect_exception:
+        with pytest.raises(expect_exception):
+            Fuzzer(config.example_json_file, domain_name)
+    else:
+        Fuzzer(config.example_json_file, domain_name)
 
 
 def log_last_state_used(fuzzer):
