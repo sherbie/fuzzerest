@@ -23,7 +23,7 @@ def fuzzer(config):
     return Fuzzer(config.example_json_file, domain)
 
 
-def init_methods(config, fuzzer):
+def test_init_methods(config, fuzzer):
     expected_methods = request.METHODS
     assert (
         fuzzer.methods == expected_methods
@@ -46,7 +46,7 @@ def init_methods(config, fuzzer):
         pass
 
     try:
-        Fuzzer(config.example_json_file, self.domain, methods=0)
+        Fuzzer(config.example_json_file, domain, methods=0)
         raise Exception("should throw RuntimeError because of invalid HTTP method")
     except RuntimeError:
         pass
@@ -61,16 +61,16 @@ def init_methods(config, fuzzer):
     assert fuzzy.methods == expected_methods
 
 
-def init_expectations(fuzzer, config):
+def test_init_expectations(fuzzer, config):
     e = fuzzer.default_expectations
     assert e, "default expectations should have loaded from " + config.example_json_file
 
 
-def init_mutator(fuzzer):
+def test_init_mutator(fuzzer):
     assert fuzzer.mutator is not None, "should have loaded mutator object"
 
 
-def init_logger(fuzzer, config):
+def test_init_logger(fuzzer, config):
     expected_file_name = "_all_uris_all_methods"
     assert expected_file_name in fuzzer.log_file_name
 
@@ -111,7 +111,7 @@ def test_init_domain(config, domain_name, expect_exception):
         Fuzzer(config.example_json_file, domain_name)
 
 
-def log_last_state_used(fuzzer):
+def test_log_last_state_used(fuzzer):
     fuzzer.log_last_state_used(0)
 
 
@@ -205,7 +205,7 @@ def get_expectations(fuzzer, config):
     )
 
 
-def inject_constants(fuzzer):
+def test_inject_constants(fuzzer):
     token = "{time}"
     constants = {token: "newvalue"}
     assert token in json.dumps(fuzzer.model_obj)
@@ -227,7 +227,7 @@ def inject_constants(fuzzer):
     ), f'"{constants[token]}" should have replaced "{token}"'
 
 
-def mutate_payload_body(fuzzer):
+def test_mutate_payload_body(fuzzer):
     payload = fuzzer.mutate_payload(
         next(
             (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/json"),
@@ -237,7 +237,7 @@ def mutate_payload_body(fuzzer):
     assert payload.get("body") is not None, "payload should have a body"
 
 
-def mutate_payload_query(fuzzer):
+def test_mutate_payload_query(fuzzer):
     payload = fuzzer.mutate_payload(
         next(
             (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/query/string"),
