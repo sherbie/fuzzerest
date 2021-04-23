@@ -23,6 +23,10 @@ class DomainNameNotFoundError(BaseException):
     pass
 
 
+class URINotFoundError(BaseException):
+    pass
+
+
 class Fuzzer:
     def log_last_state_used(self, state):
         self.config.root_logger.log(
@@ -104,12 +108,19 @@ class Fuzzer:
         self.state = state
         self.starting_state = state
         self.config = config_obj if config_obj else Config()
-        self.uri = uri if uri else None
+        self.uri = uri
         self.model_obj = self.load_model()
 
         if not self.get_domain_spec():
             raise DomainNameNotFoundError(
                 f"Domain name {self.domain} could not be found in model loaded from {self.model_file_path}"
+            )
+
+        if self.uri and not [
+            e for e in self.model_obj["endpoints"] if e["uri"] == self.uri
+        ]:
+            raise URINotFoundError(
+                f"URI '{self.uri}' could not be found in model loaded from {self.model_file_path}"
             )
 
         self.model_reload_rate = self.config.model_reload_interval_seconds
@@ -303,7 +314,7 @@ class Fuzzer:
             strict=False,
         )
 
-        if not status.errors:
+        if status.ok:
             exp_status = self.validate_expectations(model)
 
             if exp_status.ok:

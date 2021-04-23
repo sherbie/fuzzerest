@@ -5,7 +5,7 @@ import time
 import pytest
 
 from fuzzerest import mutator, request
-from fuzzerest.fuzzer import DomainNameNotFoundError, Fuzzer
+from fuzzerest.fuzzer import DomainNameNotFoundError, Fuzzer, URINotFoundError
 from fuzzerest.request import Summary
 
 root_logger = logging.getLogger()
@@ -109,6 +109,32 @@ def test_init_domain(config, domain_name, expect_exception):
             Fuzzer(config.example_json_file, domain_name)
     else:
         Fuzzer(config.example_json_file, domain_name)
+
+
+@pytest.mark.kwparametrize(
+    dict(
+        uri="/watch",
+        expect_exception=None,
+    ),
+    dict(
+        uri=None,
+        expect_exception=None,
+    ),
+    dict(
+        uri="",
+        expect_exception=None,
+    ),
+    dict(
+        uri="bad_uri",
+        expect_exception=URINotFoundError,
+    ),
+)
+def test_init_uri(config, uri, expect_exception):
+    if expect_exception:
+        with pytest.raises(expect_exception):
+            Fuzzer(config.example_json_file, "default", uri=uri)
+    else:
+        Fuzzer(config.example_json_file, "default", uri=uri)
 
 
 def test_log_last_state_used(fuzzer):
@@ -458,21 +484,6 @@ def test_iterate_endpoints_uri_methods(config):
     summaries = fuzzer.iterate_endpoints()
     assert expected_uri in json.dumps([str(summary) for summary in summaries]), (
         f"should find a request with uri {original_uri} that was changed to {expected_uri} after injecting {expected_constant} "
-        "as a constant"
-    )
-
-    placeholder = "{something_that_doesnt_exist}"
-    original_uri = "/" + placeholder
-    expected_uri = "/" + expected_constant
-    fuzzer = Fuzzer(
-        config.example_json_file,
-        domain,
-        constants={placeholder: expected_constant},
-        uri=original_uri,
-    )
-    summaries = fuzzer.iterate_endpoints()
-    assert expected_uri not in json.dumps(summaries), (
-        f"should not find a request with uri {original_uri} that was changed to {expected_uri} after injecting {expected_constant} "
         "as a constant"
     )
 
