@@ -65,7 +65,7 @@ def test_get_cmd_string(client):
 
 
 def test_set_constants(client):
-    jsonfile = client.config.example_json_file
+    jsonfile = client.config.example_model_file
     jsonfile_args = ["-C", jsonfile]
     args = argparse_args + jsonfile_args
     client.parsed_args = client.parser.parse_args(args)
@@ -104,7 +104,7 @@ def test_set_constants(client):
 
 
 def test_parse_cli_args(client):
-    model_file = client.config.example_json_file
+    model_file = client.config.example_model_file
     cmdline_args = ["./cli.py", "-d", "test", "-m", os.path.join("..", model_file)]
     sys.argv = cmdline_args
     client.parse_cli_args()
@@ -122,7 +122,7 @@ def test_parse_cli_args(client):
 
 
 def test_parse_default_cli_args(client, config):
-    model_file = client.config.example_json_file
+    model_file = client.config.example_model_file
     model_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "..", model_file
     )
@@ -136,7 +136,7 @@ def test_parse_default_cli_args(client, config):
     actual_path = os.path.realpath(client.parsed_args.model_path)
     assert os.path.exists(actual_path), actual_path
     expected_path = os.path.join(
-        script_dir, "..", os.path.realpath(config.example_json_file)
+        script_dir, "..", os.path.realpath(config.example_model_file)
     )
     assert os.path.exists(expected_path), expected_path
     assert (
@@ -153,7 +153,7 @@ def test_parse_default_cli_args(client, config):
 
 
 def test_run_fuzzer(client):
-    model_file = client.config.example_json_file
+    model_file = client.config.example_model_file
     state_file = client.config.example_states_file
     cmdline_args = [
         "./cli.py",

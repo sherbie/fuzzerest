@@ -291,7 +291,7 @@ def test_mutate_regex_str(mutator, config):
 
 def test_mutate_regex_obj(mutator, config):
     uri = "/json"
-    with open(config.example_json_file, "r") as model_file:
+    with open(config.example_model_file, "r") as model_file:
         model = json.loads(model_file.read(), object_pairs_hook=OrderedDict)
 
     obj = Fuzzer.get_endpoints(model["endpoints"], uri)[0]["input"]["body"]

@@ -20,7 +20,7 @@ domain = "local"
 
 @pytest.fixture(scope="function")
 def fuzzer(config):
-    return Fuzzer(config.example_json_file, domain)
+    return Fuzzer(config.example_model_file, domain)
 
 
 def test_init_methods(config, fuzzer):
@@ -31,7 +31,7 @@ def test_init_methods(config, fuzzer):
 
     try:
         Fuzzer(
-            config.example_json_file,
+            config.example_model_file,
             domain,
             methods=["GET", "NOT_A_METHOD"],
         )
@@ -40,30 +40,32 @@ def test_init_methods(config, fuzzer):
         pass
 
     try:
-        Fuzzer(config.example_json_file, domain, methods="GET, NOT_A_METHOD")
+        Fuzzer(config.example_model_file, domain, methods="GET, NOT_A_METHOD")
         raise Exception("should throw RuntimeError because of invalid HTTP method")
     except RuntimeError:
         pass
 
     try:
-        Fuzzer(config.example_json_file, domain, methods=0)
+        Fuzzer(config.example_model_file, domain, methods=0)
         raise Exception("should throw RuntimeError because of invalid HTTP method")
     except RuntimeError:
         pass
 
     method = "GET"
-    fuzzy = Fuzzer(config.example_json_file, domain, methods=method)
+    fuzzy = Fuzzer(config.example_model_file, domain, methods=method)
     expected_methods = [method]
     assert fuzzy.methods == expected_methods, "should allow string of one HTTP method"
 
     expected_methods = ["PUT", "PATCH"]
-    fuzzy = Fuzzer(config.example_json_file, domain, methods=expected_methods)
+    fuzzy = Fuzzer(config.example_model_file, domain, methods=expected_methods)
     assert fuzzy.methods == expected_methods
 
 
 def test_init_expectations(fuzzer, config):
     e = fuzzer.default_expectations
-    assert e, "default expectations should have loaded from " + config.example_json_file
+    assert e, (
+        "default expectations should have loaded from " + config.example_model_file
+    )
 
 
 def test_init_mutator(fuzzer):
@@ -75,12 +77,12 @@ def test_init_logger(fuzzer, config):
     assert expected_file_name in fuzzer.log_file_name
 
     methods = ["GET", "POST"]
-    fuzzy = Fuzzer(config.example_json_file, domain, methods=methods)
+    fuzzy = Fuzzer(config.example_model_file, domain, methods=methods)
     expected_file_name = "_all_uris_" + "_".join(methods)
     assert expected_file_name in fuzzy.log_file_name
 
     uri = "/json"
-    fuzzy = Fuzzer(config.example_json_file, domain, methods=methods, uri=uri)
+    fuzzy = Fuzzer(config.example_model_file, domain, methods=methods, uri=uri)
     expected_file_name = "-json_" + "_".join(methods)
     assert expected_file_name in fuzzy.log_file_name
 
@@ -106,9 +108,9 @@ def test_init_logger(fuzzer, config):
 def test_init_domain(config, domain_name, expect_exception):
     if expect_exception:
         with pytest.raises(expect_exception):
-            Fuzzer(config.example_json_file, domain_name)
+            Fuzzer(config.example_model_file, domain_name)
     else:
-        Fuzzer(config.example_json_file, domain_name)
+        Fuzzer(config.example_model_file, domain_name)
 
 
 @pytest.mark.kwparametrize(
@@ -132,9 +134,9 @@ def test_init_domain(config, domain_name, expect_exception):
 def test_init_uri(config, uri, expect_exception):
     if expect_exception:
         with pytest.raises(expect_exception):
-            Fuzzer(config.example_json_file, "default", uri=uri)
+            Fuzzer(config.example_model_file, "default", uri=uri)
     else:
-        Fuzzer(config.example_json_file, "default", uri=uri)
+        Fuzzer(config.example_model_file, "default", uri=uri)
 
 
 def test_log_last_state_used(fuzzer):
@@ -162,7 +164,7 @@ def test_evaluate_expectations(expectations, success):
 
 
 def test_evaluate_endpoint_expectation(config):
-    with open(config.example_json_file, "r") as model_file:
+    with open(config.example_model_file, "r") as model_file:
         model = json.loads(model_file.read())
 
     endpoint = next((l for l in model["endpoints"] if l["uri"] == "/sleepabit"), None)
@@ -220,7 +222,7 @@ def get_expectations(fuzzer, config):
         "default" in expectations.keys()
     ), "should choose the default expectation definition"
 
-    fuzzy = Fuzzer(config.example_expectations_file, domain)
+    fuzzy = Fuzzer(config.example_model_file, domain)
     endpoint = next(
         (l for l in fuzzy.model_obj["endpoints"] if l["uri"] == "/json"), None
     )
@@ -401,7 +403,7 @@ def _get_n_expected_summaries(endpoints, n_iterations, uri=None, methods=None):
 
 def test_iterate_endpoints_uri(config):
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -425,7 +427,7 @@ def test_iterate_endpoints_uri(config):
 
 def test_iterate_endpoints_methods(config):
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -449,7 +451,7 @@ def test_iterate_endpoints_methods(config):
 
 def test_iterate_endpoints_uri_methods(config):
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -476,7 +478,7 @@ def test_iterate_endpoints_uri_methods(config):
     expected_constant = "shoop"
     expected_uri = "/" + expected_constant
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         constants={placeholder: expected_constant},
         uri=original_uri,
@@ -489,7 +491,7 @@ def test_iterate_endpoints_uri_methods(config):
 
 
 def test_iterate_endpoints_all(config):
-    fuzzer = Fuzzer(config.example_json_file, domain, global_timeout=True, timeout=5)
+    fuzzer = Fuzzer(config.example_model_file, domain, global_timeout=True, timeout=5)
     n_times = 1
     expected_n_summaries = _get_n_expected_summaries(
         fuzzer.model_obj["endpoints"], n_times
@@ -505,7 +507,7 @@ def test_iterate_endpoints_log_summary_uri(config):
     method = "GET"
     uri = "/{someId}"
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=0.1,
@@ -531,7 +533,7 @@ def test_iterate_endpoints_log_summary_uri(config):
 
     constants = {"{someId}": "some_constant"}
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=0.1,
@@ -570,7 +572,7 @@ def test_check_for_model_update(fuzzer):
 
 def test_fuzz_requests_by_incremental_state(config):
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -586,7 +588,7 @@ def test_fuzz_requests_by_incremental_state(config):
 
 def test_fuzz_requests_by_state_list(config):
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -607,7 +609,7 @@ def _run_parallel_fuzzers(
 ):
 
     fuzzer1 = Fuzzer(
-        test_config.example_json_file,
+        test_config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -617,7 +619,7 @@ def _run_parallel_fuzzers(
         methods=["POST"],
     )
     fuzzer2 = Fuzzer(
-        test_config.example_json_file,
+        test_config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -670,7 +672,7 @@ def test_state_iteration(config):
     n_times = 1
     state = 0
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=0.1,
@@ -707,7 +709,7 @@ def test_get_states_from_file(config):
 
 def test_send_delayed_request_local(config):
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=0.1,
@@ -724,7 +726,7 @@ def test_send_delayed_request_local(config):
 
 def test_send_delayed_request_global(config):
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=0.1,
@@ -740,7 +742,7 @@ def test_send_delayed_request_global(config):
     ), f"local request rate should override global definition with delay of {expected_delay}"
 
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=0.1,
@@ -807,12 +809,12 @@ def test_get_model_with_constants(fuzzer, config):
     except FileNotFoundError:
         pass
 
-    fuzzer.model_file_path = config.example_json_file
+    fuzzer.model_file_path = config.example_model_file
     fuzzer.load_model()  # testing the constant injection feature is done in inject_constants
 
 
 def test_mutate_headers(config, fuzzer):
-    with open(config.example_json_file, "r") as model_file:
+    with open(config.example_model_file, "r") as model_file:
         model = json.loads(model_file.read())
 
     header_to_drop = "Authorization"
@@ -851,7 +853,7 @@ def test_slack_status_update(config, mocker):
     _update_interval = config.slack_status_update_interval_seconds
 
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
@@ -887,7 +889,7 @@ def test_slack_error_throttle(config, mocker):
     mocker.patch.object(request, "send_request", return_value=mock_summary)
 
     fuzzer = Fuzzer(
-        config.example_json_file,
+        config.example_model_file,
         domain,
         global_timeout=True,
         timeout=5,
