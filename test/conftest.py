@@ -25,5 +25,5 @@ def mutator(config):
 
 @pytest.fixture(scope="session")
 def model(config):
-    with open(config.example_model_file, "r") as model_file:
+    with open(config.model_file, "r") as model_file:
         return json.loads(model_file.read(), object_pairs_hook=OrderedDict)

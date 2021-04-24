@@ -78,8 +78,8 @@ class Config:
             Path(self.parser.get("DEFAULT", "radamsa_bin")).resolve()
         )
 
-        self.example_model_file = self.parser.get("test", "example_model_file")
-        self.example_states_file = self.parser.get("test", "example_states_file")
+        self.model_file = self.parser.get("test", "model_file")
+        self.states_file = self.parser.get("test", "states_file")
 
         self.cli_coverage_file = self.parser.get("test", "cli_coverage_file")
         self.fuzzer_coverage_file = self.parser.get("test", "fuzzer_coverage_file")
