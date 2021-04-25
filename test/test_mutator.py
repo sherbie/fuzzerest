@@ -23,10 +23,10 @@ sample = "abcdef0123456789öåä!#€%&/()=?©@£$∞§|[]≈±´~^¨*abcdef0123
         override_path=False,
     ),
 )
-def test_radamsa_config(mocker, override_path):
+def test_radamsa_config(config, mocker, override_path):
     if override_path:
         mocker.patch.object(os.environ, "get", return_value="bad/path")
-    radamsa = Radamsa()
+    radamsa = Radamsa(config)
     assert not radamsa.ready if override_path else radamsa.ready
     byte_output = radamsa.get("test", "unicode_escape", 1)
 

@@ -10,17 +10,17 @@ from fuzzerest.mutator import Mutator
 
 @pytest.fixture(scope="session")
 def config():
-    return Config()
+    return Config("test")
 
 
 @pytest.fixture(scope="session")
-def client():
-    return Client()
+def client(config):
+    return Client(config)
 
 
 @pytest.fixture(scope="session")
 def mutator(config):
-    return Mutator(config.fuzz_db_array)
+    return Mutator(config)
 
 
 @pytest.fixture(scope="session")

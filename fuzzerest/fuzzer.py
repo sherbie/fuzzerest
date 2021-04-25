@@ -79,15 +79,15 @@ class Fuzzer:
 
     def __init__(
         self,
-        model_file_path,
-        domain,
+        model_file_path: str = "",
+        domain: str = "",
         global_timeout=False,
         state=0,
         timeout=None,
         constants=None,
         uri=None,
         methods=None,
-        config_obj=None,
+        config_obj: Config = Config(),
     ):
         """
         :param model_file_path: string file handle for the model
@@ -101,13 +101,15 @@ class Fuzzer:
         """
 
         self.constants = constants
-        self.model_file_path = model_file_path
-        self.domain = domain
         self.timeout = timeout if timeout is not None and timeout > 0 else None
         self.global_timeout = global_timeout
         self.state = state
         self.starting_state = state
-        self.config = config_obj if config_obj else Config()
+        self.config = config_obj
+        self.model_file_path = (
+            model_file_path if model_file_path else self.config.model_file
+        )
+        self.domain = domain if domain else self.config.default_model_domain_name
         self.uri = uri
         self.model_obj = self.load_model()
 
@@ -181,7 +183,7 @@ class Fuzzer:
             )
             self.default_expectations = []
 
-        self.mutator = mutator.Mutator(self.config.fuzz_db_array, state)
+        self.mutator = mutator.Mutator(config=self.config, state=state)
 
         signal.signal(signal.SIGABRT, self.exit_handler)
         signal.signal(signal.SIGFPE, self.exit_handler)
