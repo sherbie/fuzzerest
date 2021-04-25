@@ -21,42 +21,55 @@ def fuzzer(config):
     return Fuzzer(config_obj=config, domain=domain)
 
 
-def test_init_methods(config, fuzzer):
-    expected_methods = request.METHODS
-    assert (
-        fuzzer.methods == expected_methods
-    ), "should contain all methods if none were initialized"
-
-    try:
-        Fuzzer(
-            config_obj=config,
-            domain=domain,
-            methods=["GET", "NOT_A_METHOD"],
+@pytest.mark.kwparametrize(
+    dict(
+        expect_exception=RuntimeError,
+        methods=["GET", "NOT_A_METHOD"],
+        expect_methods=None,
+    ),
+    dict(
+        expect_exception=RuntimeError,
+        methods="GET, NOT_A_METHOD",
+        expect_methods=None,
+    ),
+    dict(
+        expect_exception=RuntimeError,
+        methods=0,
+        expect_methods=None,
+    ),
+    dict(
+        expect_exception=None,
+        methods="GET",
+        expect_methods=["GET"],
+    ),
+    dict(
+        expect_exception=None,
+        methods=["PUT", "PATCH"],
+        expect_methods=["PUT", "PATCH"],
+    ),
+    dict(
+        expect_exception=None,
+        methods=None,
+        expect_methods=request.METHODS,
+    ),
+)
+def test_init_methods(config, expect_exception, methods, expect_methods):
+    if expect_exception:
+        with pytest.raises(expect_exception):
+            Fuzzer(
+                config_obj=config,
+                domain=domain,
+                methods=methods,
+            )
+    else:
+        assert (
+            Fuzzer(
+                config_obj=config,
+                domain=domain,
+                methods=methods,
+            ).methods
+            == expect_methods
         )
-        raise Exception("should throw RuntimeError because of invalid HTTP method")
-    except RuntimeError:
-        pass
-
-    try:
-        Fuzzer(config_obj=config, domain=domain, methods="GET, NOT_A_METHOD")
-        raise Exception("should throw RuntimeError because of invalid HTTP method")
-    except RuntimeError:
-        pass
-
-    try:
-        Fuzzer(config_obj=config, domain=domain, methods=0)
-        raise Exception("should throw RuntimeError because of invalid HTTP method")
-    except RuntimeError:
-        pass
-
-    method = "GET"
-    fuzzy = Fuzzer(config_obj=config, domain=domain, methods=method)
-    expected_methods = [method]
-    assert fuzzy.methods == expected_methods, "should allow string of one HTTP method"
-
-    expected_methods = ["PUT", "PATCH"]
-    fuzzy = Fuzzer(config_obj=config, domain=domain, methods=expected_methods)
-    assert fuzzy.methods == expected_methods
 
 
 def test_init_expectations(fuzzer, config):
@@ -68,19 +81,35 @@ def test_init_mutator(fuzzer):
     assert fuzzer.mutator is not None, "should have loaded mutator object"
 
 
-def test_init_logger(fuzzer, config):
-    expected_file_name = "_all_uris_all_methods"
-    assert expected_file_name in fuzzer.log_file_name
-
-    methods = ["GET", "POST"]
-    fuzzy = Fuzzer(config_obj=config, domain=domain, methods=methods)
-    expected_file_name = "_all_uris_" + "_".join(methods)
-    assert expected_file_name in fuzzy.log_file_name
-
-    uri = "/json"
-    fuzzy = Fuzzer(config_obj=config, domain=domain, methods=methods, uri=uri)
-    expected_file_name = "-json_" + "_".join(methods)
-    assert expected_file_name in fuzzy.log_file_name
+@pytest.mark.kwparametrize(
+    dict(
+        uri="/json",
+        methods=["GET", "POST"],
+        expected_file_name="-json_GET_POST",
+    ),
+    dict(
+        uri="/json",
+        methods=None,
+        expected_file_name="-json_all_methods",
+    ),
+    dict(
+        uri=None,
+        methods=["GET", "POST"],
+        expected_file_name="_all_uris_GET_POST",
+    ),
+    dict(
+        uri=None,
+        methods=None,
+        expected_file_name="_all_uris_all_methods",
+    ),
+)
+def test_init_logger(config, uri, methods, expected_file_name):
+    assert (
+        expected_file_name
+        in Fuzzer(
+            config_obj=config, domain=domain, methods=methods, uri=uri
+        ).log_file_name
+    )
 
 
 @pytest.mark.kwparametrize(
@@ -188,37 +217,29 @@ def test_evaluate_endpoint_expectation(config):
     ), "summary should not be expected because the httpcode is missing"
 
 
-def get_expectations(fuzzer, config):
-    endpoint = next(
-        (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/sleepabit"),
-        None,
-    )
+@pytest.mark.kwparametrize(
+    dict(
+        uri="/sleepabit",
+        expect_expectations=[
+            "import string",
+            "expectation = summary.status_code == 200 and string.digits == '0123456789'",
+            "expectation = expectation and summary.time >= 1",
+        ],
+        msg="should contain expectations defined by the endpoint",
+    ),
+    dict(
+        uri="/complex/qstring",
+        expect_expectations=[
+            "code = summary.status_code",
+            "expectation = (code >= 400 and code < 500) or ('error' in summary.response_text.lower() and code < 400)",
+        ],
+        msg="expectations should default to those in models/default_expectations.json",
+    ),
+)
+def test_get_expectations(fuzzer, uri, expect_expectations, msg):
+    endpoint = [l for l in fuzzer.model_obj["endpoints"] if l["uri"] == uri][0]
     expectations = fuzzer.get_expectations(endpoint)
-    assert len(expectations) == 1, "should only find 1 key in expectation obj"
-    assert (
-        "local" in expectations.keys()
-    ), "should choose the local expectation definition"
-
-    endpoint = next(
-        (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/complex/qstring"),
-        None,
-    )
-    fuzzer.default_expectations = ["expectation = True"]
-    expectations = fuzzer.get_expectations(endpoint)
-    assert len(expectations) == 1, "should only find 1 key in expectation obj"
-    assert (
-        "default" in expectations.keys()
-    ), "should choose the default expectation definition"
-
-    fuzzy = Fuzzer(config_obj=config, domain=domain)
-    endpoint = next(
-        (l for l in fuzzy.model_obj["endpoints"] if l["uri"] == "/json"), None
-    )
-    expectations = fuzzy.get_expectations(endpoint)
-    assert len(expectations) == 1, "should only find 1 key in expectation obj"
-    assert "global" in expectations.keys(), (
-        "should choose the global expectation definition",
-    )
+    assert expectations == expect_expectations, msg
 
 
 def test_inject_constants(fuzzer):
@@ -491,35 +512,19 @@ def test_iterate_endpoints_all(config):
     ), f"should only iterate {expected_n_summaries} times over all endpoints and methods"
 
 
-def test_iterate_endpoints_log_summary_uri(config):
+@pytest.mark.kwparametrize(
+    dict(
+        constants=None,
+        summary_msg="should contain summary for request",
+    ),
+    dict(
+        constants={"{someId}": "some_constant"},
+        summary_msg="summary for request should have a url which is logged without the injected constant",
+    ),
+)
+def test_iterate_endpoints_log_summary_uri(config, constants, summary_msg):
     method = "GET"
     uri = "/{someId}"
-    fuzzer = Fuzzer(
-        config_obj=config,
-        domain=domain,
-        global_timeout=True,
-        timeout=0.1,
-        methods=[method],
-        uri=uri,
-    )
-
-    def check_summary(message):
-        summary = fuzzer.iterate_endpoints()[0]
-        # reason is not part of the assertion because it is not easy to assert
-        expected_summary = 'state={0} method={1} uri={2} code={3} error="{4}"'.format(
-            summary.headers["X-fuzzeREST-State"],
-            method,
-            uri,
-            summary.status_code,
-            summary.error,
-        )
-        with open(fuzzer.log_file_name, "r") as file:
-            log_content = file.read()
-        assert expected_summary in log_content, f"{fuzzer.log_file_name}: {message}"
-
-    check_summary("should contain summary for request")
-
-    constants = {"{someId}": "some_constant"}
     fuzzer = Fuzzer(
         config_obj=config,
         domain=domain,
@@ -530,9 +535,18 @@ def test_iterate_endpoints_log_summary_uri(config):
         constants=constants,
     )
 
-    check_summary(
-        "summary for request should have a url which is logged without the injected constant"
+    summary = fuzzer.iterate_endpoints()[0]
+    # reason is not part of the assertion because it is not easy to assert
+    expected_summary = 'state={0} method={1} uri={2} code={3} error="{4}"'.format(
+        summary.headers["X-fuzzeREST-State"],
+        method,
+        uri,
+        summary.status_code,
+        summary.error,
     )
+    with open(fuzzer.log_file_name, "r") as file:
+        log_content = file.read()
+    assert expected_summary in log_content, f"{fuzzer.log_file_name}: {summary_msg}"
 
 
 def test_check_for_model_update(fuzzer):
@@ -712,36 +726,36 @@ def test_send_delayed_request_local(config):
     ), f"local request rate defined in endpoint should have delay of {expected_delay}"
 
 
-def test_send_delayed_request_global(config):
-    fuzzer = Fuzzer(
-        config_obj=config,
-        domain=domain,
-        global_timeout=True,
-        timeout=0.1,
+@pytest.mark.kwparametrize(
+    dict(
+        override_requests_per_second=10.1,
         uri="/delayabit",
-        methods=["GET"],
-    )
-    fuzzer.model_obj["requestsPerSecond"] = 10.1
-    summaries = fuzzer.fuzz_requests_by_incremental_state(1)
-    expected_requests_per_second = 2.5
-    expected_delay = request.get_request_delay(expected_requests_per_second)
-    assert (
-        summaries[0].delay == expected_delay
-    ), f"local request rate should override global definition with delay of {expected_delay}"
-
+        expected_requests_per_second=2.5,
+        msg="local request rate should override global definition",
+    ),
+    dict(
+        override_requests_per_second=-1,
+        uri="/poorly/designed/endpoint",
+        expected_requests_per_second=500,
+        msg="global request rate should be 500",
+    ),
+)
+def test_send_delayed_request_global(
+    config, override_requests_per_second, uri, expected_requests_per_second, msg
+):
     fuzzer = Fuzzer(
         config_obj=config,
         domain=domain,
         global_timeout=True,
         timeout=0.1,
-        uri="/poorly/designed/endpoint",
+        uri=uri,
         methods=["GET"],
     )
+    if override_requests_per_second > 0:
+        fuzzer.model_obj["requestsPerSecond"] = override_requests_per_second
     summaries = fuzzer.fuzz_requests_by_incremental_state(1)
-    expected_delay = request.get_request_delay(fuzzer.model_obj["requestsPerSecond"])
-    assert (
-        summaries[0].delay == expected_delay
-    ), f"global definition should have delay of {expected_delay}"
+    expected_delay = request.get_request_delay(expected_requests_per_second)
+    assert summaries[0].delay == expected_delay, msg
 
 
 def test_get_curl_query_string(fuzzer):
