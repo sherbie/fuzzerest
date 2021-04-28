@@ -1,17 +1,18 @@
 {
-  "domains": {
-    "domainname": {
-      "host": "",
+  "domains": [
+    {
+      "name": "domainname",
+      "host": "localhost",
       "port": null,
       "protocol": "http"
     }
-  },
+  ],
   "expectations": [
     ""
   ],
   "endpoints": [
     {
-      "uri": "",
+      "uri": "some/path",
       "comment": "",
       "methods": ["GET", "POST", "PUT", "PATCH", "DELETE"],
       "headers": {

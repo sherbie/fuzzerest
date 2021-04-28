@@ -1,3 +1,23 @@
+# 2.0.0
+
+2021-04-28
+
+- Add Cerberus data validation for models and expectations. Input
+  is validated before being used.
+- Some tests which previously were run by unittest without the
+  `test_` prefix in their method name now are re-enabled after
+  being renamed with the same prefix.
+- Fixed a flaky test caused by RNG output without a seed constant.
+
+Breaking changes
+
+- Expectations structure is now a list. Overriding order is
+  first cli input, then model input, and lastly default input
+  ([default_expectations.json](fuzzerest/models/default_expectations.json)).
+- The `name` key of the Domain dictionary in the model definition
+  was moved into the structure. This allows for easier schema
+  definition.
+
 # 1.0.2
 
 2021-04-11

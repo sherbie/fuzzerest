@@ -1,15 +1,11 @@
 import json
 import logging
 import time
-import urllib
-from collections import OrderedDict
-from urllib.parse import urlparse
 
 import pytest
-import requests
 
 from fuzzerest import mutator, request
-from fuzzerest.fuzzer import Fuzzer
+from fuzzerest.fuzzer import DomainNameNotFoundError, Fuzzer, URINotFoundError
 from fuzzerest.request import Summary
 
 root_logger = logging.getLogger()
@@ -27,7 +23,7 @@ def fuzzer(config):
     return Fuzzer(config.example_json_file, domain)
 
 
-def init_methods(config, fuzzer):
+def test_init_methods(config, fuzzer):
     expected_methods = request.METHODS
     assert (
         fuzzer.methods == expected_methods
@@ -50,7 +46,7 @@ def init_methods(config, fuzzer):
         pass
 
     try:
-        Fuzzer(config.example_json_file, self.domain, methods=0)
+        Fuzzer(config.example_json_file, domain, methods=0)
         raise Exception("should throw RuntimeError because of invalid HTTP method")
     except RuntimeError:
         pass
@@ -65,18 +61,16 @@ def init_methods(config, fuzzer):
     assert fuzzy.methods == expected_methods
 
 
-def init_expectations(fuzzer, config):
+def test_init_expectations(fuzzer, config):
     e = fuzzer.default_expectations
-    assert e is not None and e != {}, (
-        "default expectations should have loaded from " + config.example_json_file
-    )
+    assert e, "default expectations should have loaded from " + config.example_json_file
 
 
-def init_mutator(fuzzer):
+def test_init_mutator(fuzzer):
     assert fuzzer.mutator is not None, "should have loaded mutator object"
 
 
-def init_logger(fuzzer, config):
+def test_init_logger(fuzzer, config):
     expected_file_name = "_all_uris_all_methods"
     assert expected_file_name in fuzzer.log_file_name
 
@@ -91,8 +85,80 @@ def init_logger(fuzzer, config):
     assert expected_file_name in fuzzy.log_file_name
 
 
-def log_last_state_used(fuzzer):
+@pytest.mark.kwparametrize(
+    dict(
+        domain_name="bad_name",
+        expect_exception=DomainNameNotFoundError,
+    ),
+    dict(
+        domain_name="",
+        expect_exception=DomainNameNotFoundError,
+    ),
+    dict(
+        domain_name=None,
+        expect_exception=DomainNameNotFoundError,
+    ),
+    dict(
+        domain_name="example",
+        expect_exception=None,
+    ),
+)
+def test_init_domain(config, domain_name, expect_exception):
+    if expect_exception:
+        with pytest.raises(expect_exception):
+            Fuzzer(config.example_json_file, domain_name)
+    else:
+        Fuzzer(config.example_json_file, domain_name)
+
+
+@pytest.mark.kwparametrize(
+    dict(
+        uri="/watch",
+        expect_exception=None,
+    ),
+    dict(
+        uri=None,
+        expect_exception=None,
+    ),
+    dict(
+        uri="",
+        expect_exception=None,
+    ),
+    dict(
+        uri="bad_uri",
+        expect_exception=URINotFoundError,
+    ),
+)
+def test_init_uri(config, uri, expect_exception):
+    if expect_exception:
+        with pytest.raises(expect_exception):
+            Fuzzer(config.example_json_file, "default", uri=uri)
+    else:
+        Fuzzer(config.example_json_file, "default", uri=uri)
+
+
+def test_log_last_state_used(fuzzer):
     fuzzer.log_last_state_used(0)
+
+
+@pytest.mark.kwparametrize(
+    dict(
+        expectations=["expectation = True"],
+        success=True,
+    ),
+    dict(
+        expectations=["expectation = False"],
+        success=False,
+    ),
+)
+def test_evaluate_expectations(expectations, success):
+    assert (
+        Fuzzer.evaluate_expectations(
+            expectations,
+            Summary(method="GET", headers={}, body={}, timestamp=2, url=""),
+        )
+        is success
+    )
 
 
 def test_evaluate_endpoint_expectation(config):
@@ -103,13 +169,13 @@ def test_evaluate_endpoint_expectation(config):
     summary = Summary(method="GET", headers={}, body={}, timestamp=2, url="")
     summary.status_code = 200
 
-    expectations = OrderedDict({})
+    expectations = []
     assert not Fuzzer.evaluate_expectations(
         expectations, summary
     ), "should be false if expectation obj is empty"
 
     if endpoint.get("expectations", False):
-        expectations["local"] = endpoint["expectations"]
+        expectations = endpoint["expectations"]
 
     assert Fuzzer.evaluate_expectations(
         expectations, summary
@@ -131,16 +197,6 @@ def test_evaluate_endpoint_expectation(config):
         expectations, summary
     ), "summary should not be expected because the httpcode is missing"
 
-    expectations = OrderedDict(
-        [
-            ("default1", ["expectation = True"]),
-            ("default2", ["expectation = False"]),
-        ]
-    )
-    assert not Fuzzer.evaluate_expectations(
-        expectations, summary
-    ), "should be false because default2 overrides default1"
-
 
 def get_expectations(fuzzer, config):
     endpoint = next(
@@ -157,7 +213,7 @@ def get_expectations(fuzzer, config):
         (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/complex/qstring"),
         None,
     )
-    fuzzer.default_expectations = {"default": ["expectation = True"]}
+    fuzzer.default_expectations = ["expectation = True"]
     expectations = fuzzer.get_expectations(endpoint)
     assert len(expectations) == 1, "should only find 1 key in expectation obj"
     assert (
@@ -175,7 +231,7 @@ def get_expectations(fuzzer, config):
     )
 
 
-def inject_constants(fuzzer):
+def test_inject_constants(fuzzer):
     token = "{time}"
     constants = {token: "newvalue"}
     assert token in json.dumps(fuzzer.model_obj)
@@ -197,7 +253,7 @@ def inject_constants(fuzzer):
     ), f'"{constants[token]}" should have replaced "{token}"'
 
 
-def mutate_payload_body(fuzzer):
+def test_mutate_payload_body(fuzzer):
     payload = fuzzer.mutate_payload(
         next(
             (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/json"),
@@ -207,7 +263,7 @@ def mutate_payload_body(fuzzer):
     assert payload.get("body") is not None, "payload should have a body"
 
 
-def mutate_payload_query(fuzzer):
+def test_mutate_payload_query(fuzzer):
     payload = fuzzer.mutate_payload(
         next(
             (l for l in fuzzer.model_obj["endpoints"] if l["uri"] == "/query/string"),
@@ -428,21 +484,6 @@ def test_iterate_endpoints_uri_methods(config):
     summaries = fuzzer.iterate_endpoints()
     assert expected_uri in json.dumps([str(summary) for summary in summaries]), (
         f"should find a request with uri {original_uri} that was changed to {expected_uri} after injecting {expected_constant} "
-        "as a constant"
-    )
-
-    placeholder = "{something_that_doesnt_exist}"
-    original_uri = "/" + placeholder
-    expected_uri = "/" + expected_constant
-    fuzzer = Fuzzer(
-        config.example_json_file,
-        domain,
-        constants={placeholder: expected_constant},
-        uri=original_uri,
-    )
-    summaries = fuzzer.iterate_endpoints()
-    assert expected_uri not in json.dumps(summaries), (
-        f"should not find a request with uri {original_uri} that was changed to {expected_uri} after injecting {expected_constant} "
         "as a constant"
     )
 

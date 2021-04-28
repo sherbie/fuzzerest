@@ -28,8 +28,14 @@ def test_radamsa_config(mocker, override_path):
         mocker.patch.object(os.environ, "get", return_value="bad/path")
     radamsa = Radamsa()
     assert not radamsa.ready if override_path else radamsa.ready
-    byte_output = radamsa.get("test", "unicode_escape")
-    assert not byte_output if override_path else byte_output
+    byte_output = radamsa.get("test", "unicode_escape", 1)
+
+    # If this block fails, the radamsa binary may have changed. A new
+    # seed number might be required so that radamsa does not create
+    # empty data
+    assert (
+        not byte_output if override_path else byte_output
+    ), f"Radamsa tried to load from path {radamsa.bin_path}. Ready={radamsa.ready}"
 
 
 def test_chance(mutator):

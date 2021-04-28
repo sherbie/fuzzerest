@@ -1,0 +1,77 @@
+domains:
+  type: list
+  required: true
+  empty: false
+  schema:
+    type: dict
+    schema:
+      name:
+        type: string
+        required: true
+        empty: false
+      host:
+        type: string
+        required: true
+        empty: false
+      port:
+        type: integer
+        required: false
+        nullable: true
+      protocol:
+        type: string
+        required: true
+        empty: false
+        regex: 'https?'
+endpoints:
+  type: list
+  required: true
+  empty: false
+  schema:
+    type: dict
+    schema:
+      uri:
+        type: string
+        required: true
+        empty: false
+      comment:
+        type: string
+        required: false
+      methods:
+        type: list
+        schema:
+          type: string
+          anyof_regex:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+      headers:
+        type: dict
+        required: false
+        keysrules:
+          type: string
+        valuesrules:
+          type: string
+      timeout:
+        type: number
+        required: false
+        default: 0
+      requestsPerSecond:
+        type: number
+        required: false
+        default: 1
+      input:
+        type: dict
+        required: false
+        schema:
+          body:
+            type: dict
+            required: false
+            keysrules:
+              type: string
+          query:
+            type: dict
+            required: false
+            keysrules:
+              type: string

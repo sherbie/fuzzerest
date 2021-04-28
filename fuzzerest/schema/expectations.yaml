@@ -1,0 +1,4 @@
+expectations:
+  type: list
+  schema:
+    type: string

@@ -1,11 +1,12 @@
 {
-  "domains": {
-    "default": {
+  "domains": [
+    {
+      "name": "default",
       "host": "localhost",
       "port": 8080,
       "protocol": "http"
     }
-  },
+  ],
   "endpoints": [
     {
       "uri": "/watch",

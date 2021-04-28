@@ -24,7 +24,7 @@ def _check_url(domain_obj, uri, input_obj):
 
 def test_get_encoded_url(model):
     endpoint_obj = Fuzzer.get_endpoints(model["endpoints"], "/query/string")[0]
-    domain_obj = model["domains"]["example"]
+    domain_obj = [m for m in model["domains"] if m["name"] == "example"][0]
     _check_url(domain_obj, endpoint_obj["uri"], endpoint_obj["input"])
     url = request.get_encoded_url(
         domain_obj, endpoint_obj["uri"], endpoint_obj["input"]["query"]
@@ -78,7 +78,7 @@ def test_construct_curl_query(config, model):
     uri = "/poorly/designed/endpoint"
     method = "GET"
     endpoint = Fuzzer.get_endpoints(model["endpoints"], uri)[0]
-    domain_obj = model["domains"]["local"]
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
 
     actual_query = request.construct_curl_query(
         curl_data_file_path,
@@ -108,8 +108,9 @@ def test_delay_request(model):
 
     request_delay = request.get_request_delay(endpoint["requestsPerSecond"])
     now = time.time()
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
     response = request.send_request(
-        model["domains"]["local"], endpoint["uri"], "GET", delay=request_delay
+        domain_obj, endpoint["uri"], "GET", delay=request_delay
     )
     request_time = time.time() - now
     expected_delay = 0.4
@@ -146,8 +147,9 @@ def test_send_request_summary_size(model):
     headers = endpoint["headers"]
     body = endpoint["input"]["body"]
     query = endpoint["input"]["query"]
+    domain_obj = [m for m in model["domains"] if m["name"] == "example"][0]
     summary = request.send_request(
-        model["domains"]["example"],
+        domain_obj,
         uri,
         method,
         headers_obj=headers,
@@ -250,7 +252,7 @@ def test_sanitize_headers():
 
 
 def test_sanitize_url(model):
-    domain_obj = model["domains"]["local"]
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
     uri = "/i/have/the/best/uri/EVAR"
     size = request.MAX_REQUEST_SEGMENT_SIZE
     query_obj = {"a": "".join("b" for i in range(size))}
@@ -264,7 +266,7 @@ def test_sanitize_url(model):
 
 
 def test_sanitize(model):
-    domain_obj = model["domains"]["local"]
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
     uri = "/i/have/the/best/uri/EVAR"
     headers_obj = {
         HEADER_AUTH: "Bearer my.token",
@@ -291,7 +293,7 @@ def test_sanitize(model):
 
 
 def test_sanitize_url_length_limit(model, config):
-    domain_obj = model["domains"]["local"]
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
     base_url = "http://localhost:8080"
     max_length = config.maximum_url_size_in_bytes
     addedLength = max_length - len(base_url + "/")
@@ -325,8 +327,9 @@ def test_send_request(mocker, model):
     method = "GET"
     endpoint = Fuzzer.get_endpoints(model["endpoints"], uri)[0]
 
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
     res = request.send_request(
-        model["domains"]["local"],
+        domain_obj,
         endpoint["uri"],
         method,
         body_obj=endpoint["input"]["body"],
@@ -351,8 +354,9 @@ def test_send_request_timeout(mocker, model):
     uri = "/sleepabit"
     method = "GET"
     endpoint = Fuzzer.get_endpoints(model["endpoints"], uri)[0]
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
     res = request.send_request(
-        model["domains"]["local"],
+        domain_obj,
         endpoint["uri"],
         method,
         timeout=0.1,
@@ -372,8 +376,9 @@ def test_send_request_body_and_query(mocker, model):
     uri = "/poorly/designed/endpoint"
     method = "GET"
     endpoint = Fuzzer.get_endpoints(model["endpoints"], uri)[0]
+    domain_obj = [m for m in model["domains"] if m["name"] == "local"][0]
     res = request.send_request(
-        model["domains"]["local"],
+        domain_obj,
         endpoint["uri"],
         method,
         timeout=0.1,
@@ -384,7 +389,7 @@ def test_send_request_body_and_query(mocker, model):
         res.body == endpoint["input"]["body"]
     ), "expected response to contain request body"
     assert res.url == request.get_encoded_url(
-        model["domains"]["local"],
+        domain_obj,
         endpoint["uri"],
         endpoint["input"]["query"],
     ), "expected response to contain url-encoded query"
