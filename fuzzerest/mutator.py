@@ -9,8 +9,8 @@ from fuzzerest.config.config import Config
 
 
 class Radamsa:
-    def __init__(self):
-        self.config = Config()
+    def __init__(self, config: Config = Config()):
+        self.config = config
         path = Path(os.environ.get("RADAMSA_BIN", self.config.radamsa_bin_path))
         self.ready = path.exists() and path.is_file()
         self.bin_path = str(path.resolve())
@@ -40,10 +40,17 @@ class Radamsa:
 
 
 class Mutator:
-    def __init__(self, fuzzdb_array, state=0, byte_encoding="unicode_escape"):
+    def __init__(
+        self,
+        fuzzdb_array: list = [],
+        state=0,
+        byte_encoding="unicode_escape",
+        config: Config = Config(),
+    ):
+        self.config = config
         self.own_rand = random.Random()
         self.change_state(state)
-        self.fuzzdb_array = fuzzdb_array
+        self.fuzzdb_array = fuzzdb_array if fuzzdb_array else config.fuzz_db_array
         self.byte_encoding = byte_encoding
         self.radamsa = Radamsa()
 

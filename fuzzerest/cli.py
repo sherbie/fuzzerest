@@ -11,8 +11,8 @@ from fuzzerest.fuzzer import Fuzzer
 
 
 class Client:
-    def __init__(self):
-        self.config = Config()
+    def __init__(self, config: Config = Config()):
+        self.config = config
 
         self.parser = argparse.ArgumentParser(
             description="fuzzeREST: A fuzzing utility that sends HTTP requests of mutated json data models"

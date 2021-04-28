@@ -23,10 +23,10 @@ sample = "abcdef0123456789öåä!#€%&/()=?©@£$∞§|[]≈±´~^¨*abcdef0123
         override_path=False,
     ),
 )
-def test_radamsa_config(mocker, override_path):
+def test_radamsa_config(config, mocker, override_path):
     if override_path:
         mocker.patch.object(os.environ, "get", return_value="bad/path")
-    radamsa = Radamsa()
+    radamsa = Radamsa(config)
     assert not radamsa.ready if override_path else radamsa.ready
     byte_output = radamsa.get("test", "unicode_escape", 1)
 
@@ -291,7 +291,7 @@ def test_mutate_regex_str(mutator, config):
 
 def test_mutate_regex_obj(mutator, config):
     uri = "/json"
-    with open(config.example_json_file, "r") as model_file:
+    with open(config.model_file, "r") as model_file:
         model = json.loads(model_file.read(), object_pairs_hook=OrderedDict)
 
     obj = Fuzzer.get_endpoints(model["endpoints"], uri)[0]["input"]["body"]

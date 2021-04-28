@@ -10,20 +10,20 @@ from fuzzerest.mutator import Mutator
 
 @pytest.fixture(scope="session")
 def config():
-    return Config()
+    return Config("test")
 
 
 @pytest.fixture(scope="session")
-def client():
-    return Client()
+def client(config):
+    return Client(config)
 
 
 @pytest.fixture(scope="session")
 def mutator(config):
-    return Mutator(config.fuzz_db_array)
+    return Mutator(config)
 
 
 @pytest.fixture(scope="session")
 def model(config):
-    with open(config.example_json_file, "r") as model_file:
+    with open(config.model_file, "r") as model_file:
         return json.loads(model_file.read(), object_pairs_hook=OrderedDict)
