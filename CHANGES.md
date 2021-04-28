@@ -1,3 +1,12 @@
+# 2.1.0
+
+2021-04-28
+
+- Refactor `Config` class to accept a profile argument. This
+  makes separation between test and production configurations
+  more explicit.
+- Allow states and model file paths to be configurable.
+
 # 2.0.0
 
 2021-04-28
