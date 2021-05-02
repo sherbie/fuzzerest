@@ -606,6 +606,72 @@ def test_fuzz_requests_by_state_list(config):
         )
 
 
+@pytest.mark.kwparametrize(
+    dict(
+        n_times=0,
+        states=[5, 2345, 3409, 222, 6],
+        expect_states=[5, 2345, 3409, 222, 6],
+        expect_final_state=0,
+        expect_exception=None,
+    ),
+    dict(
+        n_times=5,
+        states=[],
+        expect_states=list(range(5)),
+        expect_final_state=5,
+        expect_exception=None,
+    ),
+    dict(
+        n_times=5,
+        states=[5, 2345, 9, 222, 6],
+        expect_states=[5, 2345, 9, 222, 6, 0, 1, 2, 3, 4],
+        expect_final_state=7,
+        expect_exception=None,
+    ),
+    dict(
+        n_times=2,
+        states=[1, 2, 3],
+        expect_states=[1, 2, 3, 0, 4],
+        expect_final_state=5,
+        expect_exception=None,
+    ),
+    dict(
+        n_times=-1,
+        states=[],
+        expect_states=[],
+        expect_final_state=0,
+        expect_exception=ValueError,
+    ),
+)
+def test_fuzz_requests(
+    config, n_times, states, expect_states, expect_final_state, expect_exception
+):
+    fuzzer = Fuzzer(
+        config_obj=config,
+        domain=domain,
+        global_timeout=True,
+        timeout=5,
+        uri="/any/method",
+        methods=["GET"],
+    )
+
+    if expect_exception:
+        with pytest.raises(expect_exception):
+            fuzzer.fuzz_requests(states=states, n_times=n_times)
+        assert fuzzer.state == expect_final_state
+    else:
+        summaries = fuzzer.fuzz_requests(states=states, n_times=n_times)
+        assert len(summaries) == n_times + len(states)
+
+        actual_states = [
+            int(summary.headers["X-fuzzeREST-State"]) for summary in summaries
+        ]
+        assert (
+            actual_states == expect_states
+        ), "fuzzer should have iterated these states"
+        assert fuzzer.state == expect_final_state
+
+
 def _run_parallel_fuzzers(
     test_config, n_iterations, fuzzer_1_state=0, fuzzer_2_state=0
 ):

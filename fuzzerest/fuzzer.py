@@ -589,6 +589,54 @@ class Fuzzer:
 
         return results
 
+    def fuzz_requests(self, states: list[int] = [], n_times: int = 0) -> list[Summary]:
+        """
+        Send a request for each uri and method permutation for each state in states, then for a
+        number of states equal to n_times. If both states and n_times parameters are set, the
+        states list will be used first, followed by states not yet used in incremental order
+        starting from zero.
+        """
+        if n_times < 0:
+            raise ValueError(
+                f"Expected number of iterations to be >= 0 but instead got {n_times}"
+            )
+
+        max_iterations = self.config.max_iterations_in_memory
+        results = []
+
+        is_finite = len(states) > 0 or n_times > 0
+        counter = range(len(states) + n_times) if is_finite else itertools.count()
+
+        if states:
+            self.change_state(states[0])
+
+        fuzzed_states = []
+
+        for _ in counter:
+            self._check_for_model_update()
+            start = time()
+            _results = self.iterate_endpoints()
+            fuzzed_states += [self.state]
+
+            if len(results) < max_iterations and is_finite:
+                results.extend(_results)
+                if len(results) > max_iterations:
+                    results = results[:max_iterations]
+
+            if (_ + 1) < len(states):
+                self.change_state(states[_ + 1])
+            elif states:
+                next_state = 0
+                while next_state in fuzzed_states:
+                    next_state += 1
+                self.change_state(next_state)
+            else:
+                self.change_state(self.state + 1)
+
+            self.time_since_last_model_check += time() - start
+
+        return results
+
     @staticmethod
     def get_states_from_file(file_handle):
         """
